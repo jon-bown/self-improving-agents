@@ -1,0 +1,172 @@
+# Customer questions for the Acme Cloud support agent.
+#
+# split:
+#   traffic  - questions "real users" send in Level 0; they become traces.
+#   holdout  - never shown to an optimizer; used only to check that an improvement generalizes.
+#   drift    - new kinds of questions that start arriving in Level 5, after the agent was "fixed".
+#
+# must_include / must_not_include are regexes the simulated reviewers use as their private
+# answer key (see src/sia/reviewers.py). The agent never sees them.
+
+cases:
+  # ---------------- billing ----------------
+  - id: refund_window
+    split: traffic
+    topic: billing
+    question: How long can I wait to request a refund?
+    expected_response: Refunds are available within 14 days of purchase.
+    must_include: ['14[- ]day']
+    must_not_include: ['30[- ]day']
+  - id: annual_refund
+    split: traffic
+    topic: billing
+    question: I'm on the annual plan. Do I get a longer refund window than monthly customers?
+    expected_response: No. Annual plans have the same 14-day refund window as every other plan.
+    must_include: ['14[- ]day']
+    must_not_include: ['30[- ]day']
+  - id: prorated_refund
+    split: traffic
+    topic: billing
+    question: I bought Pro three weeks ago and barely used it. Can I get a partial refund?
+    expected_response: No. The refund window is 14 days and prorated refunds are not issued after it.
+    must_include: ['14[- ]day', "(no|not|isn't|aren't|cannot|can't)"]
+    must_not_include: ['30[- ]day']
+  - id: billing_email
+    split: traffic
+    topic: billing
+    question: How do I change the email address my invoices go to?
+    expected_response: Go to Settings → Billing → Billing contact.
+    must_include: ['[Bb]illing contact']
+  - id: failed_payment
+    split: traffic
+    topic: billing
+    question: What happens if my card payment fails?
+    expected_response: It is retried 3 times over 7 days, then the workspace moves to the Free plan. No data is deleted.
+    must_include: ['(3|three) times', '(7|seven) days', '[Ff]ree']
+  - id: currencies
+    split: holdout
+    topic: billing
+    question: Can I pay in Canadian dollars?
+    expected_response: No. Acme Cloud bills in USD, EUR, and GBP only.
+    must_include: ['USD', 'EUR', 'GBP']
+  - id: refund_where
+    split: holdout
+    topic: billing
+    question: Bought the monthly plan yesterday by mistake. Refund?
+    expected_response: Yes, you are within the 14-day window. Request it at Settings → Billing → Request refund.
+    must_include: ['14[- ]day']
+    must_not_include: ['30[- ]day']
+
+  # ---------------- account access ----------------
+  - id: reset_expiry
+    split: traffic
+    topic: account_access
+    question: How long is a password reset link valid?
+    expected_response: 15 minutes.
+    must_include: ['15 minutes']
+    must_not_include: ['24 hours']
+  - id: cant_login_after_reset
+    split: traffic
+    topic: account_access
+    question: I reset my password but still can't log in. What should I do?
+    expected_response: Clear your browser cache, request a new reset link, and use it within 15 minutes.
+    must_include: ['cache', '15 minutes']
+  - id: lockout
+    split: traffic
+    topic: account_access
+    question: I typed my password wrong a bunch of times and now I'm locked out. How long?
+    expected_response: 30 minutes, after 5 failed attempts.
+    must_include: ['30 minutes']
+  - id: lost_2fa
+    split: traffic
+    topic: account_access
+    question: I lost my phone with my authenticator app. How do I get back in?
+    expected_response: Use a backup code. Without backup codes, support verifies your identity, which takes 2 business days.
+    must_include: ['backup code', '2 business days']
+  - id: sso_pro
+    split: traffic
+    topic: account_access
+    question: Can we set up SSO with Okta on our Pro plan?
+    expected_response: No. SSO is available on the Enterprise plan only.
+    must_include: ['Enterprise']
+    must_not_include: ['(?i)yes, (you can|pro)']
+  - id: sso_enterprise
+    split: holdout
+    topic: account_access
+    question: Which plan do I need for SAML single sign-on?
+    expected_response: Enterprise.
+    must_include: ['Enterprise']
+  - id: lost_2fa_no_codes
+    split: holdout
+    topic: account_access
+    question: No phone and no backup codes. Am I locked out forever?
+    expected_response: No. Contact support for identity verification, which takes 2 business days.
+    must_include: ['2 business days']
+
+  # ---------------- product how-to ----------------
+  - id: export
+    split: traffic
+    topic: product_howto
+    question: How do I export all my data?
+    expected_response: Settings → Data → Export, as CSV or JSON. Large workspaces can take up to 24 hours.
+    must_include: ['Export', '(CSV|JSON)']
+  - id: seats_pro
+    split: traffic
+    topic: product_howto
+    question: How many teammates can I invite on Pro?
+    expected_response: Up to 10 seats.
+    must_include: ['10']
+  - id: jira
+    split: traffic
+    topic: product_howto
+    question: Does Acme Cloud integrate with Jira?
+    expected_response: No. Built-in integrations are Slack, GitHub, and Google Drive.
+    must_include: ["(no|not|doesn't|does not)"]
+    must_not_include: ['(?i)yes,? (it|acme)']
+  - id: api_key_lost
+    split: traffic
+    topic: product_howto
+    question: I lost my API key. Can you show it to me again?
+    expected_response: No. Keys are shown only once. Create a new one at Settings → Developer → API keys.
+    must_include: ['(once|new key|create a new)']
+  - id: offline_browser
+    split: holdout
+    topic: product_howto
+    question: Can I use Acme Cloud offline in Chrome?
+    expected_response: No. Offline mode is only in the desktop app.
+    must_include: ['desktop']
+  - id: seats_free
+    split: holdout
+    topic: product_howto
+    question: Can I add a colleague on the free plan?
+    expected_response: No. Free has 1 seat; upgrade to Pro for up to 10.
+    must_include: ['(1 seat|one seat|single seat)']
+
+  # ---------------- drift: arrives in Level 5 ----------------
+  # A new knowledge file (support_process.md) was added by another team. Instructions that list
+  # the policy files explicitly do not know it exists.
+  - id: discount
+    split: drift
+    topic: support_process
+    question: Can you give me a discount if I sign up for two years?
+    expected_response: I can't offer discounts, but I've escalated this; a specialist will reply by email within 1 business day.
+    must_include: ['1 business day']
+    must_not_include: ['(?i)yes,? (i can|we can)']
+  - id: roadmap
+    split: drift
+    topic: support_process
+    question: When will you ship a Jira integration?
+    expected_response: I can't share roadmap dates. I've escalated your request; a specialist will reply within 1 business day.
+    must_include: ['1 business day']
+  - id: nonprofit
+    split: drift
+    topic: support_process
+    question: We're a nonprofit. Is there special pricing?
+    expected_response: Nonprofit discounts are handled by sales. I've escalated this; a specialist will reply within 1 business day.
+    must_include: ['1 business day']
+  - id: talk_to_human
+    split: drift
+    topic: support_process
+    question: I want to talk to a real person about my contract.
+    expected_response: I've escalated this to a specialist, who will reply by email within 1 business day.
+    must_include: ['1 business day']
