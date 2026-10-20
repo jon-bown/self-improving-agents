@@ -41,9 +41,28 @@ except Exception:
 # ---- 2. Isolated OpenClaw profile ----------------------------------------------------------
 openclaw_setup.write_config(mlflow_otel=args.mlflow_otel, experiment_id=experiment_id)
 print("OpenClaw:", openclaw_setup.check())
+
+# ---- 3. Hermes Agent (only when it's the runtime) -------------------------------------------
+if config.BACKEND == "hermes":
+    try:
+        import run_agent  # noqa: F401  (the hermes-agent package)
+
+        status = "installed"
+        if llm.split(config.AGENT_MODEL)[0] == "ollama":
+            variant = llm.ensure_ollama_ctx_variant(llm.split(config.AGENT_MODEL)[1], llm.HERMES_NUM_CTX)
+            status += f"; Ollama model {variant} ({llm.HERMES_NUM_CTX // 1024}K context, required by Hermes)"
+    except ImportError:
+        status = 'not installed: pip install -e ".[hermes]"'
+    except RuntimeError as e:
+        status = f"model not ready: {e}"
+    print(f"Hermes: {status}; isolated state in {config.HERMES_STATE_DIR}")
 print(f"Provider: {config.PROVIDER}   backend: {config.BACKEND}")
 print(f"Agent model: {config.AGENT_MODEL}   judge model: {config.JUDGE_MODEL}   "
       f"embeddings: {config.EMBEDDING_MODEL or 'none (SIMBA alignment)'}")
+if "ollama" in (llm.split(config.AGENT_MODEL)[0], llm.split(config.JUDGE_MODEL)[0]):
+    models = llm.ollama_models()
+    status = "not reachable" if models is None else f"up, models: {', '.join(sorted(models)) or 'none'}"
+    print(f"Ollama at {llm.OLLAMA_BASE}: {status}")
 if not config.HAS_LLM:
     print(f"\nNo credentials for {config.JUDGE_MODEL} ({llm.missing_key_hint(config.JUDGE_MODEL)}): "
           "LLM judges are disabled. Use SIA_BACKEND=offline to rehearse.")

@@ -1,0 +1,11 @@
+---
+title: "The self-improvement loop (every level)"
+---
+flowchart LR
+    T[("Traces")]:::mlflow --> S["SIGNAL<br/>human feedback · expectations<br/>code scorers · LLM judges"]:::signal
+    S --> ST[("STORE<br/>evaluation dataset<br/>grows from failures")]:::mlflow
+    ST --> U["UPDATE<br/>new AGENTS.md version<br/>in the Prompt Registry"]:::update
+    U --> G{"GATE<br/>must-pass · beats production<br/>no holdout regression"}:::gate
+    G -- "pass" --> P["PROMOTE<br/>move @production alias"]:::gate
+    G -- "fail" --> X["reject<br/>(kept as a version)"]:::ext
+    P --> A["Agent serves<br/>new version"]:::runtime --> T

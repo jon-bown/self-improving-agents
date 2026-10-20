@@ -1,0 +1,21 @@
+---
+title: "Level 0 · Instrument: version the instructions, trace every answer"
+---
+flowchart LR
+    V1["workspace_v1/AGENTS.md<br/>(seeded flaws)"]:::ext
+
+    subgraph RT["Agent runtime · 02_first_traces.py"]
+        CUST(["Customer traffic"]):::ext --> RA["run_agent()<br/>AGENT span"]:::runtime_new
+        RA --> OC["OpenClaw<br/>isolated profile"]:::runtime_new
+        OC --> WS["Workspace<br/>AGENTS.md + knowledge/"]:::runtime_new
+        OC --> LLM[["LLM provider"]]:::ext
+    end
+
+    subgraph ML["MLflow"]
+        PR[("Prompt Registry<br/>v1 ← @production")]:::mlflow_new
+        TR[("Traces<br/>topic · backend · prompt_version<br/>source=production")]:::mlflow_new
+    end
+
+    V1 -- "01_setup.py · register + alias" --> PR
+    WS -- "renders @production" --> PR
+    RA -- "one trace per answer" --> TR

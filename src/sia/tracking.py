@@ -15,7 +15,8 @@ def setup(experiment: str | None = None) -> str:
     mlflow.set_tracking_uri(config.TRACKING_URI)
     exp = mlflow.set_experiment(experiment or config.EXPERIMENT)
     if config.BACKEND == "direct":
-        mlflow.litellm.autolog()  # LLM spans (any provider) under our AGENT span
+        mlflow.litellm.autolog()    # LLM spans (any provider via LiteLLM) under our AGENT span
+        mlflow.anthropic.autolog()  # ... and for Claude, which goes through the Anthropic SDK
     return exp.experiment_id
 
 

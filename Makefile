@@ -3,13 +3,42 @@ PY      ?= .venv/bin/python
 PORT    ?= 5000
 L       := levels
 
-.PHONY: help install server setup level0 level1 level2 level3 level4 level5 week drift test rehearse reset
+.PHONY: help install ollama hermes notebooks sdk-notebooks notebooks-ui sdk-notebooks-ui sdk-gateway-stop diagrams server setup level0 level1 level2 level3 level4 level5 week drift test rehearse reset
 
 help:           ## list targets
 	@grep -E '^[a-z0-9]+:.*##' Makefile | sed 's/:.*##/\t/'
 
 install:        ## create .venv and install the package (needs uv)
 	uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+
+ollama:         ## check the local Ollama server and pull the configured models
+	@$(PY) -c "from sia import config, llm; import sys; \
+	ms = {llm.split(u)[1] for u in (config.AGENT_MODEL, config.JUDGE_MODEL) if llm.split(u)[0] == 'ollama'}; \
+	sys.exit('Ollama not reachable at ' + llm.OLLAMA_BASE + ': install from ollama.com and run ollama serve') if llm.ollama_models() is None else print(' '.join(ms))" \
+	| xargs -n1 ollama pull
+
+hermes:         ## install the Hermes Agent runtime and build its 64K-context Ollama model
+	uv pip install -p .venv -e ".[dev,hermes]"
+	SIA_BACKEND=hermes $(PY) -c "from sia import config, llm; p, m = llm.split(config.AGENT_MODEL); \
+	print('Hermes model:', llm.ensure_ollama_ctx_variant(m, llm.HERMES_NUM_CTX) if p == 'ollama' else config.AGENT_MODEL)"
+
+notebooks:      ## open the walkthrough notebooks in JupyterLab
+	uv pip install -p .venv -e ".[dev,notebooks]"
+	$(PY) -m jupyter lab notebooks/
+
+sdk-notebooks:  ## OpenClaw (openclaw-sdk) + Hermes from Python, MLflow on top: notebooks/sdk
+	uv pip install -p .venv -e ".[dev,notebooks,hermes,openclaw-sdk]"
+	$(PY) -m jupyter lab notebooks/sdk/
+
+notebooks-ui:   ## MLflow UI for what the notebooks created (notebooks/.mlflow), on port 5001
+	$(PY) -m mlflow ui --backend-store-uri sqlite:///notebooks/.mlflow/mlflow.db --port 5001
+
+sdk-notebooks-ui: ## MLflow UI for the notebooks/sdk series, on port 5002
+	$(PY) -m mlflow ui --backend-store-uri sqlite:///notebooks/.mlflow/sdk.db --port 5002
+
+sdk-gateway-stop: ## stop the OpenClaw gateway the notebooks/sdk series started (port 19556)
+	$(PY) -c "from sia import notebook as nb; from sia.openclaw_client import Gateway; \
+	Gateway(nb.NB_STORE / 'sdk' / 'gateway', nb.NB_STORE / 'sdk' / 'openclaw').stop()"
 
 server:         ## run the MLflow tracking server (sqlite backend; enables online scoring jobs)
 	$(PY) -m mlflow server --backend-store-uri sqlite:///mlflow.db --port $(PORT)
@@ -49,6 +78,9 @@ level5:         ## autonomous loop with simulated traffic and drift
 
 test:           ## the regression gate (dataset + holdout) as pytest
 	$(PY) -m pytest -p mlflow.pytest.plugin tests/agent -q
+
+diagrams:       ## rebuild docs/architecture (mmd, svg, png) and README diagram blocks
+	$(PY) scripts/render_diagrams.py
 
 rehearse:       ## run every level offline (no API key, no OpenClaw) into a throwaway store
 	./scripts/rehearse_offline.sh

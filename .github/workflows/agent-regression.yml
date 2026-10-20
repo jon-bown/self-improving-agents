@@ -14,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-      # Pick a provider with a repository variable (default anthropic) and add that provider's key
-      # as a secret. Unused keys are simply empty.
+      # The tutorial defaults to a local Ollama model, which hosted CI runners can't serve
+      # comfortably. CI uses a hosted provider instead: set the SIA_PROVIDER repository variable
+      # (default anthropic) and add that provider's key as a secret. Unused keys are simply empty.
       SIA_PROVIDER: ${{ vars.SIA_PROVIDER || 'anthropic' }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

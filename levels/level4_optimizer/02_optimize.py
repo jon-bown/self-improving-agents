@@ -12,7 +12,7 @@ Use SIA_BACKEND=direct here: GEPA calls the agent dozens of times, and the direc
 runs the same AGENTS.md + knowledge/ in seconds instead of spawning OpenClaw each time.
 The gate can then re-check the winner on OpenClaw:  SIA_BACKEND=openclaw ... 03_gate.py
 
-    SIA_BACKEND=direct python levels/level4_optimizer/02_optimize.py [--budget 60]
+    SIA_BACKEND=direct python levels/level4_optimizer/02_optimize.py [--budget N]
 """
 
 import argparse
@@ -21,7 +21,8 @@ from sia import config, data, improvers, signals, tracking
 from sia.agent import load_agents_md, register_candidate
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--budget", type=int, default=60, help="GEPA max_metric_calls")
+parser.add_argument("--budget", type=int, default=config.GEPA_BUDGET,
+                    help="GEPA max_metric_calls (default 16 on Ollama, 60 on hosted providers)")
 args = parser.parse_args()
 
 experiment_id = tracking.setup()

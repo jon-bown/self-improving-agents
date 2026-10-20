@@ -1,0 +1,26 @@
+---
+title: "Level 2 · Manual loop: a person writes the fix and approves it"
+---
+flowchart LR
+    AS[("Labeled traces<br/>feedback.quality = 'false'<br/>+ expected_response")]:::mlflow
+    DS[("Evaluation dataset<br/>dedupe by question")]:::mlflow_new
+    HO["Holdout cases<br/>(never optimized on)"]:::ext
+
+    P1(["Person reads<br/>rationales"]):::human_new
+    V2["AGENTS.md v2<br/>register_prompt<br/>(not promoted)"]:::update_new
+
+    subgraph GATE["Gate · sia/gate.py"]
+        EV["evaluate() production vs v2<br/>same data · same scorers"]:::gate_new
+        RULES{"must-pass 100%<br/>beats production<br/>holdout not worse"}:::gate_new
+    end
+
+    P2(["Person approves<br/>--promote"]):::human_new
+    PR[("Prompt Registry<br/>@production → v2<br/>@previous → v1")]:::mlflow
+    CI["pytest -p mlflow.pytest.plugin<br/>@mlflow.test per dataset row<br/>(CI on every PR)"]:::gate_new
+
+    AS -- "merge_records" --> DS
+    AS --> P1 --> V2
+    DS & HO --> EV
+    V2 --> EV --> RULES
+    RULES -- "pass" --> P2 --> PR
+    DS --> CI

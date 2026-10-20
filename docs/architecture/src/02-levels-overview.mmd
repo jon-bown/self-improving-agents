@@ -1,0 +1,11 @@
+---
+title: "Levels of self-improvement: who writes the change, who approves it"
+---
+flowchart LR
+    L0["<b>Level 0 · Instrument</b><br/>version AGENTS.md<br/>trace every answer"]:::runtime
+    L1["<b>Level 1 · Signal</b><br/>reviewers · code scorers · judges<br/>check the verifiers"]:::signal
+    L2["<b>Level 2 · Manual loop</b><br/>writes: person<br/>approves: person"]:::human
+    L3["<b>Level 3 · Agent-assisted</b><br/>writes: LLM analyst<br/>approves: person"]:::update
+    L4["<b>Level 4 · Optimizer</b><br/>writes: GEPA + aligned judge<br/>approves: person"]:::update
+    L5["<b>Level 5 · Autonomous</b><br/>writes: GEPA · analyst · OpenClaw itself<br/>approves: the gate"]:::gate
+    L0 --> L1 --> L2 --> L3 --> L4 --> L5

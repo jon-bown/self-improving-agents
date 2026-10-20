@@ -10,3 +10,6 @@ mlartifacts/
 proposals/
 .pytest_cache/
 .DS_Store
+.hermes-state/
+notebooks/.mlflow/
+.ipynb_checkpoints/

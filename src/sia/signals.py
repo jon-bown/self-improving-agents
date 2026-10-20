@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from mlflow.entities import Feedback
+from mlflow.entities import Feedback, SpanType
 from mlflow.genai.judges import make_judge
 from mlflow.genai.scorers import Correctness, Guidelines, scorer
 
@@ -98,9 +98,56 @@ def quality_judge(model: str | None = None):
     )
 
 
+# ---- Tool-level signal: *how* the agent got its answer ----------------------------------------
+# These read the TOOL spans in the trace: the direct runtime's read_file calls, and OpenClaw's own
+# tool calls replayed from its session trajectory (sia/openclaw_trace.py).
+def knowledge_reads(trace) -> list[str]:
+    reads = []
+    for span in sorted(trace.data.spans, key=lambda sp: sp.start_time_ns):  # in the order they happened
+        if span.span_type == SpanType.TOOL and isinstance(span.inputs, dict):
+            path = str(span.inputs.get("path") or span.inputs.get("file_path") or "")
+            if "knowledge/" in path:
+                reads.append(path[path.index("knowledge/"):])
+    return reads
+
+
+@scorer
+def read_right_policy(trace) -> Feedback:
+    """Did the agent read the policy file for the question's topic before answering?"""
+    topic = trace.info.tags.get("topic")
+    if not topic:
+        return Feedback(value=True, rationale="No topic tag on this trace.")
+    expected, reads = f"knowledge/{topic}.md", knowledge_reads(trace)
+    if expected in reads:
+        return Feedback(value=True, rationale=f"Read {expected}.")
+    if not reads:
+        return Feedback(value=False, rationale=f"Answered without reading any policy file (expected {expected}).")
+    return Feedback(value=False, rationale=f"Read {', '.join(dict.fromkeys(reads))} but not {expected}.")
+
+
+@scorer
+def focused_reading(trace) -> Feedback:
+    """Shotgun reading (every policy file, every time) is slow and usually means the agent
+    doesn't know where to look. One or two files is enough for any question in this scenario."""
+    reads = list(dict.fromkeys(knowledge_reads(trace)))
+    return Feedback(value=len(reads) <= 2, rationale=f"Read {len(reads)} policy file(s): {', '.join(reads) or 'none'}.")
+
+
+def tool_scorers():
+    """Deterministic tool checks, plus MLflow's LLM-based ToolCallCorrectness when SIA_TOOL_JUDGE=1."""
+    import os
+
+    out = [read_right_policy, focused_reading]
+    if config.HAS_LLM and os.getenv("SIA_TOOL_JUDGE") == "1":
+        from mlflow.genai.scorers import ToolCallCorrectness
+
+        out.append(ToolCallCorrectness())
+    return out
+
+
 def code_scorers():
     """Reference-free deterministic checks: safe to run on any production trace."""
-    return [no_stale_policy, no_disclaimer_opener, concise]
+    return [no_stale_policy, no_disclaimer_opener, concise, read_right_policy, focused_reading]
 
 
 def judge_scorers():
@@ -135,4 +182,5 @@ def register_theme(slug: str, criterion: str):
 
 def all_scorers(quality=None):
     extra = [quality] if (quality is not None and config.HAS_LLM) else []
-    return code_scorers() + judge_scorers() + reference_scorers() + theme_scorers() + extra
+    llm_tool = [s for s in tool_scorers() if s not in code_scorers()]
+    return code_scorers() + llm_tool + judge_scorers() + reference_scorers() + theme_scorers() + extra

@@ -1,0 +1,25 @@
+---
+title: "Level 1 · Signal: people, code, and judges label the traces"
+---
+flowchart LR
+    TR[("Traces (production)<br/>incl. OpenClaw's own LLM + TOOL spans")]:::mlflow
+
+    subgraph PEOPLE["01 · people"]
+        RQ["Review queue<br/>label schemas (--live)"]:::human_new --> RV["Reviewers<br/>maria · dev · sam<br/>different rubrics"]:::human_new
+    end
+
+    subgraph AUTO["02 · evaluate(data=traces) · no predict_fn"]
+        CS["Code scorers<br/>stale policy · disclaimer · length"]:::signal_new
+        TS["Tool-level scorers<br/>read_right_policy · focused_reading"]:::signal_new
+        GJ["Guidelines judges<br/>leads_with_answer · no_guessing"]:::signal_new
+        QJ["quality judge<br/>make_judge → bool"]:::signal_new
+    end
+
+    AS[("Assessments per trace<br/>feedback: HUMAN · CODE · LLM_JUDGE<br/>expectations: answer + key facts")]:::mlflow_new
+    AGR{"03 · Check the verifiers<br/>judge ↔ human agreement<br/>&lt; 85% → don't optimize on it"}:::signal_new
+
+    TR --> RQ
+    TR --> CS & TS & GJ & QJ
+    RV -- "log_feedback<br/>log_expectation" --> AS
+    CS & TS & GJ & QJ --> AS
+    AS --> AGR

@@ -16,6 +16,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest-xdist", "ruff"]
+# Hermes Agent runtime (SIA_BACKEND=hermes). Pinned: the tracing hooks wrap two of its methods.
+hermes = ["hermes-agent==0.19.0"]
+# OpenClaw from Python (notebooks/sdk, sia.openclaw_client). Pinned: sia adapts its v3 handshake to v4.
+openclaw-sdk = ["openclaw-sdk==2.1.0", "cryptography>=42"]
+# Walkthrough notebooks (notebooks/ and notebooks/sdk/)
+notebooks = ["jupyterlab", "ipykernel", "nbclient", "nbformat"]
 
 [build-system]
 requires = ["hatchling"]

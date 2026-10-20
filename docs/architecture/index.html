@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Self-Improving Agent Architecture</title>
+<style>
+  :root { --bg:#ffffff; --fg:#212529; --muted:#868e96; --accent:#e8590c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 Inter,Helvetica,Arial,sans-serif; }
+  header { padding:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-bottom:1px solid #e9ecef; }
+  header h1 { font-size:18px; margin:0 12px 0 0; }
+  header button { border:1px solid #ced4da; background:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; }
+  header button[aria-current=true] { border-color:var(--accent); color:var(--accent); }
+  .hint { color:var(--muted); margin-left:auto; font-size:13px; }
+  section { padding:24px 16px 48px; max-width:1400px; margin:0 auto; overflow-x:auto; }
+  pre.mermaid { margin:0; }
+  section .mermaid { display:flex; justify-content:center; }
+  section .mermaid svg { max-width:100%; height:auto; }
+  body.present header { display:none; }
+  body.present section { display:none; max-width:none; height:100vh; padding:24px; }
+  body.present section.on { display:block; }
+  body.present section.on pre.mermaid { width:100%; height:100%; }
+  body.present section.on pre.mermaid svg { width:100% !important; height:100% !important; max-width:none !important; }
+</style></head>
+<body>
+<header><h1>Self-improving agent: architecture</h1><button>System architecture</button><button>The self-improvement loop (every level)</button><button>Levels of self-improvement</button><button>Level 0 · Instrument</button><button>Level 1 · Signal</button><button>Level 2 · Manual loop</button><button>Level 3 · Agent-assisted</button><button>Level 4 · Optimizer</button><button>Level 5 · Autonomous</button>
+<span class="hint">&larr; &rarr; step &middot; P present &middot; Esc exit</span></header>
+<section id="00-system"><pre class="mermaid">---
+title: &quot;System architecture: OpenClaw agent + MLflow&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    subgraph SERVE[&quot;Serving · src/sia/agent.py&quot;]
+        CUST([&quot;Customer&quot;]):::ext --&gt; RA[&quot;run_agent(AgentSpec)&lt;br/&gt;AGENT span + tags&quot;]:::runtime
+        RA --&gt; RT[&quot;OpenClaw · Hermes Agent&lt;br/&gt;(or direct · offline)&quot;]:::runtime
+        RT --&gt; WS[&quot;Workspace&lt;br/&gt;AGENTS.md · skills/ · knowledge/&quot;]:::runtime
+        RT --&gt; LLM[[&quot;LLM provider&lt;br/&gt;provider:/model&quot;]]:::ext
+        RT -- &quot;trajectory · callbacks&quot; --&gt; TJ[&quot;LLM + TOOL spans&quot;]:::runtime
+    end
+
+    subgraph IMP[&quot;Improvement · levels/&quot;]
+        SIG[&quot;Signal&lt;br/&gt;reviewers · scorers · judges&lt;br/&gt;tool-level checks · issue discovery&quot;]:::signal --&gt; UPD[&quot;Update&lt;br/&gt;person · analyst · GEPA · OpenClaw&quot;]:::update
+        UPD --&gt; GATE{&quot;Gate&quot;}:::gate
+        UPD -- &quot;skills&quot; --&gt; SW[&quot;OpenClaw&lt;br/&gt;Skill Workshop&quot;]:::runtime
+    end
+
+    subgraph ML[&quot;MLflow tracking server&quot;]
+        PR[(&quot;Prompt Registry&lt;br/&gt;AGENTS.md + skill versions · @production&quot;)]:::mlflow
+        TR[(&quot;Traces + assessments + issues&quot;)]:::mlflow
+        SR[(&quot;Scorer registry&quot;)]:::mlflow
+        DS[(&quot;Evaluation dataset&quot;)]:::mlflow
+        RN[(&quot;Runs · evals · gates&quot;)]:::mlflow
+    end
+
+    WS -- &quot;renders @production&quot; --&gt; PR
+    RA -- &quot;logs&quot; --&gt; TR
+    TJ -- &quot;spans&quot; --&gt; TR
+    SIG -- &quot;reads traces · writes assessments&quot; --&gt; TR
+    SIG -- &quot;uses judges&quot; --&gt; SR
+    SIG -- &quot;curates&quot; --&gt; DS
+    UPD -- &quot;registers new version&quot; --&gt; PR
+    GATE -- &quot;evaluates on&quot; --&gt; DS
+    GATE -- &quot;logs&quot; --&gt; RN
+    GATE -- &quot;moves alias&quot; --&gt; PR
+</pre></section>
+<section id="01-loop"><pre class="mermaid">---
+title: &quot;The self-improvement loop (every level)&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    T[(&quot;Traces&quot;)]:::mlflow --&gt; S[&quot;SIGNAL&lt;br/&gt;human feedback · expectations&lt;br/&gt;code scorers · LLM judges&quot;]:::signal
+    S --&gt; ST[(&quot;STORE&lt;br/&gt;evaluation dataset&lt;br/&gt;grows from failures&quot;)]:::mlflow
+    ST --&gt; U[&quot;UPDATE&lt;br/&gt;new AGENTS.md version&lt;br/&gt;in the Prompt Registry&quot;]:::update
+    U --&gt; G{&quot;GATE&lt;br/&gt;must-pass · beats production&lt;br/&gt;no holdout regression&quot;}:::gate
+    G -- &quot;pass&quot; --&gt; P[&quot;PROMOTE&lt;br/&gt;move @production alias&quot;]:::gate
+    G -- &quot;fail&quot; --&gt; X[&quot;reject&lt;br/&gt;(kept as a version)&quot;]:::ext
+    P --&gt; A[&quot;Agent serves&lt;br/&gt;new version&quot;]:::runtime --&gt; T
+</pre></section>
+<section id="02-levels-overview"><pre class="mermaid">---
+title: &quot;Levels of self-improvement: who writes the change, who approves it&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    L0[&quot;&lt;b&gt;Level 0 · Instrument&lt;/b&gt;&lt;br/&gt;version AGENTS.md&lt;br/&gt;trace every answer&quot;]:::runtime
+    L1[&quot;&lt;b&gt;Level 1 · Signal&lt;/b&gt;&lt;br/&gt;reviewers · code scorers · judges&lt;br/&gt;check the verifiers&quot;]:::signal
+    L2[&quot;&lt;b&gt;Level 2 · Manual loop&lt;/b&gt;&lt;br/&gt;writes: person&lt;br/&gt;approves: person&quot;]:::human
+    L3[&quot;&lt;b&gt;Level 3 · Agent-assisted&lt;/b&gt;&lt;br/&gt;writes: LLM analyst&lt;br/&gt;approves: person&quot;]:::update
+    L4[&quot;&lt;b&gt;Level 4 · Optimizer&lt;/b&gt;&lt;br/&gt;writes: GEPA + aligned judge&lt;br/&gt;approves: person&quot;]:::update
+    L5[&quot;&lt;b&gt;Level 5 · Autonomous&lt;/b&gt;&lt;br/&gt;writes: GEPA · analyst · OpenClaw itself&lt;br/&gt;approves: the gate&quot;]:::gate
+    L0 --&gt; L1 --&gt; L2 --&gt; L3 --&gt; L4 --&gt; L5
+</pre></section>
+<section id="level0-instrument"><pre class="mermaid">---
+title: &quot;Level 0 · Instrument: version the instructions, trace every answer&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    V1[&quot;workspace_v1/AGENTS.md&lt;br/&gt;(seeded flaws)&quot;]:::ext
+
+    subgraph RT[&quot;Agent runtime · 02_first_traces.py&quot;]
+        CUST([&quot;Customer traffic&quot;]):::ext --&gt; RA[&quot;run_agent()&lt;br/&gt;AGENT span&quot;]:::runtime_new
+        RA --&gt; OC[&quot;OpenClaw&lt;br/&gt;isolated profile&quot;]:::runtime_new
+        OC --&gt; WS[&quot;Workspace&lt;br/&gt;AGENTS.md + knowledge/&quot;]:::runtime_new
+        OC --&gt; LLM[[&quot;LLM provider&quot;]]:::ext
+    end
+
+    subgraph ML[&quot;MLflow&quot;]
+        PR[(&quot;Prompt Registry&lt;br/&gt;v1 ← @production&quot;)]:::mlflow_new
+        TR[(&quot;Traces&lt;br/&gt;topic · backend · prompt_version&lt;br/&gt;source=production&quot;)]:::mlflow_new
+    end
+
+    V1 -- &quot;01_setup.py · register + alias&quot; --&gt; PR
+    WS -- &quot;renders @production&quot; --&gt; PR
+    RA -- &quot;one trace per answer&quot; --&gt; TR
+</pre></section>
+<section id="level1-signal"><pre class="mermaid">---
+title: &quot;Level 1 · Signal: people, code, and judges label the traces&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    TR[(&quot;Traces (production)&lt;br/&gt;incl. OpenClaw&#x27;s own LLM + TOOL spans&quot;)]:::mlflow
+
+    subgraph PEOPLE[&quot;01 · people&quot;]
+        RQ[&quot;Review queue&lt;br/&gt;label schemas (--live)&quot;]:::human_new --&gt; RV[&quot;Reviewers&lt;br/&gt;maria · dev · sam&lt;br/&gt;different rubrics&quot;]:::human_new
+    end
+
+    subgraph AUTO[&quot;02 · evaluate(data=traces) · no predict_fn&quot;]
+        CS[&quot;Code scorers&lt;br/&gt;stale policy · disclaimer · length&quot;]:::signal_new
+        TS[&quot;Tool-level scorers&lt;br/&gt;read_right_policy · focused_reading&quot;]:::signal_new
+        GJ[&quot;Guidelines judges&lt;br/&gt;leads_with_answer · no_guessing&quot;]:::signal_new
+        QJ[&quot;quality judge&lt;br/&gt;make_judge → bool&quot;]:::signal_new
+    end
+
+    AS[(&quot;Assessments per trace&lt;br/&gt;feedback: HUMAN · CODE · LLM_JUDGE&lt;br/&gt;expectations: answer + key facts&quot;)]:::mlflow_new
+    AGR{&quot;03 · Check the verifiers&lt;br/&gt;judge ↔ human agreement&lt;br/&gt;&amp;lt; 85% → don&#x27;t optimize on it&quot;}:::signal_new
+
+    TR --&gt; RQ
+    TR --&gt; CS &amp; TS &amp; GJ &amp; QJ
+    RV -- &quot;log_feedback&lt;br/&gt;log_expectation&quot; --&gt; AS
+    CS &amp; TS &amp; GJ &amp; QJ --&gt; AS
+    AS --&gt; AGR
+</pre></section>
+<section id="level2-manual-loop"><pre class="mermaid">---
+title: &quot;Level 2 · Manual loop: a person writes the fix and approves it&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    AS[(&quot;Labeled traces&lt;br/&gt;feedback.quality = &#x27;false&#x27;&lt;br/&gt;+ expected_response&quot;)]:::mlflow
+    DS[(&quot;Evaluation dataset&lt;br/&gt;dedupe by question&quot;)]:::mlflow_new
+    HO[&quot;Holdout cases&lt;br/&gt;(never optimized on)&quot;]:::ext
+
+    P1([&quot;Person reads&lt;br/&gt;rationales&quot;]):::human_new
+    V2[&quot;AGENTS.md v2&lt;br/&gt;register_prompt&lt;br/&gt;(not promoted)&quot;]:::update_new
+
+    subgraph GATE[&quot;Gate · sia/gate.py&quot;]
+        EV[&quot;evaluate() production vs v2&lt;br/&gt;same data · same scorers&quot;]:::gate_new
+        RULES{&quot;must-pass 100%&lt;br/&gt;beats production&lt;br/&gt;holdout not worse&quot;}:::gate_new
+    end
+
+    P2([&quot;Person approves&lt;br/&gt;--promote&quot;]):::human_new
+    PR[(&quot;Prompt Registry&lt;br/&gt;@production → v2&lt;br/&gt;@previous → v1&quot;)]:::mlflow
+    CI[&quot;pytest -p mlflow.pytest.plugin&lt;br/&gt;@mlflow.test per dataset row&lt;br/&gt;(CI on every PR)&quot;]:::gate_new
+
+    AS -- &quot;merge_records&quot; --&gt; DS
+    AS --&gt; P1 --&gt; V2
+    DS &amp; HO --&gt; EV
+    V2 --&gt; EV --&gt; RULES
+    RULES -- &quot;pass&quot; --&gt; P2 --&gt; PR
+    DS --&gt; CI
+</pre></section>
+<section id="level3-agent-assisted"><pre class="mermaid">---
+title: &quot;Level 3 · Agent-assisted: MLflow finds the issues, an analyst proposes, a person approves&quot;
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    TR[(&quot;Failing traces&lt;br/&gt;verdicts + tool calls&quot;)]:::mlflow
+    DI[&quot;MLflow issue discovery&lt;br/&gt;discover_issues()&lt;br/&gt;named issues · root causes&quot;]:::signal_new
+    AN[&quot;LLM analyst&lt;br/&gt;criteria + ONE change&lt;br/&gt;picks the update target&quot;]:::update_new
+    PROP[&quot;proposals/&amp;lt;ts&amp;gt;/&lt;br/&gt;reviewed by a person&quot;]:::human
+
+    subgraph ACCEPT[&quot;02_accept.py&quot;]
+        AMD[&quot;AGENTS.md&lt;br/&gt;new prompt version&quot;]:::update
+        SK[&quot;Skill&lt;br/&gt;OpenClaw Skill Workshop proposal&lt;br/&gt;(pending · scanned)&lt;br/&gt;+ MLflow skill version&quot;]:::update_new
+        TJ[(&quot;theme_&amp;lt;slug&amp;gt; judges&lt;br/&gt;+ dataset rows&quot;)]:::mlflow
+    end
+
+    G{&quot;Gate&lt;br/&gt;production vs&lt;br/&gt;production + change&quot;}:::gate
+    APPLY[&quot;Workshop apply&lt;br/&gt;→ move @production&quot;]:::gate_new
+    REJ[&quot;Workshop reject&lt;br/&gt;with gate reasons&quot;]:::ext
+
+    TR --&gt; DI --&gt; AN --&gt; PROP
+    PROP -- &quot;AGENTS.md&quot; --&gt; AMD
+    PROP -- &quot;skill&quot; --&gt; SK
+    PROP --&gt; TJ
+    AMD &amp; SK &amp; TJ --&gt; G
+    G -- &quot;pass + person&quot; --&gt; APPLY
+    G -- &quot;fail&quot; --&gt; REJ
+</pre></section>
+<section id="level4-optimizer"><pre class="mermaid">---
+title: &quot;Level 4 · Optimizer: fix the verifier first, then let GEPA write the candidate&quot;
+---
+flowchart TB
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    HL[(&quot;Human labels&quot;)]:::mlflow -- &quot;01 · judge.align()&lt;br/&gt;SIMBA · MemAlign&quot; --&gt; AQ[&quot;Aligned quality judge&lt;br/&gt;registered only if agreement improves&quot;]:::signal_new
+    DS[(&quot;Dataset rows&quot;)]:::mlflow -- &quot;02 · optimize_prompts()&quot; --&gt; GEPA[&quot;GEPA proposes AGENTS.md variants&lt;br/&gt;(SIA_BACKEND=direct)&quot;]:::update_new
+    GEPA --&gt; RUN[&quot;Agent answers each row&quot;]:::runtime
+    RUN --&gt; SC[&quot;Scorers: code · guidelines · themes&lt;br/&gt;+ aligned quality judge&quot;]:::signal
+    AQ --&gt; SC
+    SC -- &quot;scores + rationales → reflection&quot; --&gt; GEPA
+    GEPA -- &quot;best candidate · holdout guards against overfitting&quot; --&gt; G{&quot;03 · Gate&quot;}:::gate
+    G -- &quot;pass&quot; --&gt; P([&quot;Person reads the diff and promotes&quot;]):::human
+</pre></section>
+<section id="level5-autonomous"><pre class="mermaid">---
+title: &quot;Level 5 · Autonomous: one improvement cycle = one MLflow run&quot;
+config:
+  flowchart:
+    rankSpacing: 35
+    nodeSpacing: 30
+---
+flowchart LR
+classDef runtime fill:#E7F5FF,stroke:#1971C2,color:#0B2A4A,stroke-width:1.5px
+classDef mlflow fill:#EBFBEE,stroke:#2F9E44,color:#0F3D1A,stroke-width:1.5px
+classDef signal fill:#FFF9DB,stroke:#E0A800,color:#4A3800,stroke-width:1.5px
+classDef human fill:#FFF0F6,stroke:#C2255C,color:#4A0E24,stroke-width:1.5px
+classDef update fill:#F3F0FF,stroke:#6741D9,color:#24124F,stroke-width:1.5px
+classDef gate fill:#F1F3F5,stroke:#343A40,color:#111111,stroke-width:2px
+classDef ext fill:#FFFFFF,stroke:#868E96,color:#343A40,stroke-width:1px,stroke-dasharray:4 3
+classDef runtime_new fill:#E7F5FF,stroke:#E8590C,color:#0B2A4A,stroke-width:3px
+classDef mlflow_new fill:#EBFBEE,stroke:#E8590C,color:#0F3D1A,stroke-width:3px
+classDef signal_new fill:#FFF9DB,stroke:#E8590C,color:#4A3800,stroke-width:3px
+classDef human_new fill:#FFF0F6,stroke:#E8590C,color:#4A0E24,stroke-width:3px
+classDef update_new fill:#F3F0FF,stroke:#E8590C,color:#24124F,stroke-width:3px
+classDef gate_new fill:#F1F3F5,stroke:#E8590C,color:#111111,stroke-width:3px
+    IN([&quot;Production traffic&lt;br/&gt;+ online judges&lt;br/&gt;+ humans label a sample&quot;]):::ext --&gt; TR[(&quot;New traces&lt;br/&gt;since last cycle&quot;)]:::mlflow
+
+    TR --&gt; S1[&quot;1 · Signal&lt;br/&gt;failure rate over&lt;br/&gt;judged traces&quot;]:::signal_new
+    S1 --&gt; TH{&quot;worse than&lt;br/&gt;threshold?&quot;}:::gate_new
+    TH --&gt; S2{&quot;2 · Judge ↔ human&lt;br/&gt;agreement ≥ 75%?&quot;}:::signal_new
+    S2 --&gt; S3[(&quot;3 · Store&lt;br/&gt;labeled failures&lt;br/&gt;→ dataset&quot;)]:::mlflow
+    S3 --&gt; S4[&quot;4 · Update&lt;br/&gt;GEPA · analyst · skill ·&lt;br/&gt;OpenClaw self-edit&lt;br/&gt;(--discover: MLflow issues)&quot;]:::update_new
+    S4 --&gt; S5{&quot;5 · Gate&lt;br/&gt;+ bloat guard&quot;}:::gate
+    S5 --&gt; S6[&quot;6 · Ship&lt;br/&gt;skill: Workshop apply&lt;br/&gt;then move @production&quot;]:::gate_new
+
+    S1 -. &quot;last shipped change&lt;br/&gt;got worse (receipt)&quot; .-&gt; ROLL[&quot;Rollback&lt;br/&gt;AGENTS.md or skill&quot;]:::gate_new
+    TH -. &quot;no&quot; .-&gt; OK[&quot;healthy · wait&quot;]:::ext
+    S2 -. &quot;no, even after&lt;br/&gt;re-align&quot; .-&gt; HALT([&quot;HALT&lt;br/&gt;ask a person&quot;]):::human_new
+    S5 -. &quot;fail&quot; .-&gt; REJ[&quot;reject · logged&lt;br/&gt;(Workshop reject)&quot;]:::ext
+</pre></section>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs";
+mermaid.initialize(Object.assign({ startOnLoad:false }, {"theme": "base", "themeVariables": {"fontFamily": "Inter, Helvetica, Arial, sans-serif", "fontSize": "15px", "lineColor": "#495057", "primaryTextColor": "#212529"}, "flowchart": {"curve": "basis", "htmlLabels": true, "padding": 12, "nodeSpacing": 40, "rankSpacing": 50, "wrappingWidth": 280}}));
+await mermaid.run({ querySelector: ".mermaid", suppressErrors: true });
+const secs = [...document.querySelectorAll("section")], btns = [...document.querySelectorAll("header button")];
+let i = 0;
+function show(n) {
+  i = (n + secs.length) % secs.length;
+  secs.forEach((s, k) => s.classList.toggle("on", k === i));
+  btns.forEach((b, k) => b.setAttribute("aria-current", k === i));
+  if (!document.body.classList.contains("present")) secs[i].scrollIntoView({ behavior: "smooth" });
+}
+btns.forEach((b, k) => b.onclick = () => show(k));
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === " ") show(i + 1);
+  else if (e.key === "ArrowLeft") show(i - 1);
+  else if (e.key === "p" || e.key === "P") { document.body.classList.toggle("present"); show(i); }
+  else if (e.key === "Escape") document.body.classList.remove("present");
+});
+const start = secs.findIndex(s => "#" + s.id === location.hash);
+show(start < 0 ? 0 : start);
+</script></body></html>

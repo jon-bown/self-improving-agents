@@ -1,0 +1,22 @@
+---
+title: "Level 5 · Autonomous: one improvement cycle = one MLflow run"
+config:
+  flowchart:
+    rankSpacing: 35
+    nodeSpacing: 30
+---
+flowchart LR
+    IN(["Production traffic<br/>+ online judges<br/>+ humans label a sample"]):::ext --> TR[("New traces<br/>since last cycle")]:::mlflow
+
+    TR --> S1["1 · Signal<br/>failure rate over<br/>judged traces"]:::signal_new
+    S1 --> TH{"worse than<br/>threshold?"}:::gate_new
+    TH --> S2{"2 · Judge ↔ human<br/>agreement ≥ 75%?"}:::signal_new
+    S2 --> S3[("3 · Store<br/>labeled failures<br/>→ dataset")]:::mlflow
+    S3 --> S4["4 · Update<br/>GEPA · analyst · skill ·<br/>OpenClaw self-edit<br/>(--discover: MLflow issues)"]:::update_new
+    S4 --> S5{"5 · Gate<br/>+ bloat guard"}:::gate
+    S5 --> S6["6 · Ship<br/>skill: Workshop apply<br/>then move @production"]:::gate_new
+
+    S1 -. "last shipped change<br/>got worse (receipt)" .-> ROLL["Rollback<br/>AGENTS.md or skill"]:::gate_new
+    TH -. "no" .-> OK["healthy · wait"]:::ext
+    S2 -. "no, even after<br/>re-align" .-> HALT(["HALT<br/>ask a person"]):::human_new
+    S5 -. "fail" .-> REJ["reject · logged<br/>(Workshop reject)"]:::ext

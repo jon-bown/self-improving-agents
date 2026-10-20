@@ -1,0 +1,12 @@
+---
+title: "Level 4 · Optimizer: fix the verifier first, then let GEPA write the candidate"
+---
+flowchart TB
+    HL[("Human labels")]:::mlflow -- "01 · judge.align()<br/>SIMBA · MemAlign" --> AQ["Aligned quality judge<br/>registered only if agreement improves"]:::signal_new
+    DS[("Dataset rows")]:::mlflow -- "02 · optimize_prompts()" --> GEPA["GEPA proposes AGENTS.md variants<br/>(SIA_BACKEND=direct)"]:::update_new
+    GEPA --> RUN["Agent answers each row"]:::runtime
+    RUN --> SC["Scorers: code · guidelines · themes<br/>+ aligned quality judge"]:::signal
+    AQ --> SC
+    SC -- "scores + rationales → reflection" --> GEPA
+    GEPA -- "best candidate · holdout guards against overfitting" --> G{"03 · Gate"}:::gate
+    G -- "pass" --> P(["Person reads the diff and promotes"]):::human

@@ -1,0 +1,36 @@
+---
+title: "System architecture: OpenClaw agent + MLflow"
+---
+flowchart LR
+    subgraph SERVE["Serving · src/sia/agent.py"]
+        CUST(["Customer"]):::ext --> RA["run_agent(AgentSpec)<br/>AGENT span + tags"]:::runtime
+        RA --> RT["OpenClaw · Hermes Agent<br/>(or direct · offline)"]:::runtime
+        RT --> WS["Workspace<br/>AGENTS.md · skills/ · knowledge/"]:::runtime
+        RT --> LLM[["LLM provider<br/>provider:/model"]]:::ext
+        RT -- "trajectory · callbacks" --> TJ["LLM + TOOL spans"]:::runtime
+    end
+
+    subgraph IMP["Improvement · levels/"]
+        SIG["Signal<br/>reviewers · scorers · judges<br/>tool-level checks · issue discovery"]:::signal --> UPD["Update<br/>person · analyst · GEPA · OpenClaw"]:::update
+        UPD --> GATE{"Gate"}:::gate
+        UPD -- "skills" --> SW["OpenClaw<br/>Skill Workshop"]:::runtime
+    end
+
+    subgraph ML["MLflow tracking server"]
+        PR[("Prompt Registry<br/>AGENTS.md + skill versions · @production")]:::mlflow
+        TR[("Traces + assessments + issues")]:::mlflow
+        SR[("Scorer registry")]:::mlflow
+        DS[("Evaluation dataset")]:::mlflow
+        RN[("Runs · evals · gates")]:::mlflow
+    end
+
+    WS -- "renders @production" --> PR
+    RA -- "logs" --> TR
+    TJ -- "spans" --> TR
+    SIG -- "reads traces · writes assessments" --> TR
+    SIG -- "uses judges" --> SR
+    SIG -- "curates" --> DS
+    UPD -- "registers new version" --> PR
+    GATE -- "evaluates on" --> DS
+    GATE -- "logs" --> RN
+    GATE -- "moves alias" --> PR

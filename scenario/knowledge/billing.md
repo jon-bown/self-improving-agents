@@ -4,7 +4,7 @@ _Last updated: July 1, 2026_
 
 ## Refunds
 - Refunds are available within **14 days of purchase** for all plans (Monthly, Annual, Pro, Enterprise).
-- This replaced the old 30-day window on July 1, 2026. Purchases made before July 1 keep the 30-day window.
+- This policy took effect July 1, 2026 and applies to every purchase.
 - No prorated refunds are issued after the 14-day window.
 - Request a refund at Settings → Billing → Request refund.
 

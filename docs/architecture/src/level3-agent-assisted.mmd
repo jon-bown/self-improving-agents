@@ -1,0 +1,26 @@
+---
+title: "Level 3 · Agent-assisted: MLflow finds the issues, an analyst proposes, a person approves"
+---
+flowchart LR
+    TR[("Failing traces<br/>verdicts + tool calls")]:::mlflow
+    DI["MLflow issue discovery<br/>discover_issues()<br/>named issues · root causes"]:::signal_new
+    AN["LLM analyst<br/>criteria + ONE change<br/>picks the update target"]:::update_new
+    PROP["proposals/&lt;ts&gt;/<br/>reviewed by a person"]:::human
+
+    subgraph ACCEPT["02_accept.py"]
+        AMD["AGENTS.md<br/>new prompt version"]:::update
+        SK["Skill<br/>OpenClaw Skill Workshop proposal<br/>(pending · scanned)<br/>+ MLflow skill version"]:::update_new
+        TJ[("theme_&lt;slug&gt; judges<br/>+ dataset rows")]:::mlflow
+    end
+
+    G{"Gate<br/>production vs<br/>production + change"}:::gate
+    APPLY["Workshop apply<br/>→ move @production"]:::gate_new
+    REJ["Workshop reject<br/>with gate reasons"]:::ext
+
+    TR --> DI --> AN --> PROP
+    PROP -- "AGENTS.md" --> AMD
+    PROP -- "skill" --> SK
+    PROP --> TJ
+    AMD & SK & TJ --> G
+    G -- "pass + person" --> APPLY
+    G -- "fail" --> REJ

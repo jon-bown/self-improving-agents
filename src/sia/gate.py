@@ -13,7 +13,7 @@ import mlflow
 import pandas as pd
 
 from sia import config
-from sia.agent import load_agents_md, predict_fn_for
+from sia.agent import AgentSpec, as_spec, load_agents_md, pin, predict_fn_for
 
 # Scorers that are non-negotiable: a candidate that fails any row here never ships.
 MUST_PASS = ("no_stale_policy",)
@@ -30,7 +30,7 @@ def _passed(v) -> float | None:
 @dataclass
 class Scorecard:
     label: str
-    version: int
+    spec: AgentSpec
     run_id: str
     pass_rates: dict[str, float]
 
@@ -40,8 +40,8 @@ class Scorecard:
 
 
 def scorecard(prompt_ref, data: list[dict], scorers, label: str) -> Scorecard:
-    version = int(load_agents_md(prompt_ref).version)
-    result = mlflow.genai.evaluate(data=data, predict_fn=predict_fn_for(version), scorers=scorers)
+    spec = pin(prompt_ref)  # concrete versions: "production" can't move under a running evaluation
+    result = mlflow.genai.evaluate(data=data, predict_fn=predict_fn_for(spec), scorers=scorers)
     df = result.result_df
     rates = {}
     for s in scorers:
@@ -50,9 +50,11 @@ def scorecard(prompt_ref, data: list[dict], scorers, label: str) -> Scorecard:
             vals = [x for x in map(_passed, df[col]) if x is not None]
             if vals:
                 rates[s.name] = sum(vals) / len(vals)
-    mlflow.MlflowClient().set_tag(result.run_id, "sia.label", label)
-    mlflow.MlflowClient().set_tag(result.run_id, "sia.prompt_version", str(version))
-    return Scorecard(label, version, result.run_id, rates)
+    client = mlflow.MlflowClient()
+    client.set_tag(result.run_id, "sia.label", label)
+    client.set_tag(result.run_id, "sia.prompt_version", str(spec.agents))
+    client.set_tag(result.run_id, "sia.agent_spec", spec.label)
+    return Scorecard(label, spec, result.run_id, rates)
 
 
 @dataclass
@@ -91,7 +93,7 @@ def compare(
 
     scorers = scorers or all_scorers()
     d = GateDecision(passed=True)
-    with mlflow.start_run(run_name=f"gate: v{load_agents_md(candidate).version} vs {baseline}",
+    with mlflow.start_run(run_name=f"gate: {pin(candidate).label} vs {as_spec(baseline).label}",
                           nested=mlflow.active_run() is not None) as run:
         for split, data in (("train", train), ("holdout", holdout)):
             if not data:
@@ -129,21 +131,54 @@ def compare(
     return d
 
 
-def promote(version: int, reason: str) -> None:
-    """Move the production alias. The previous version stays one alias-move away (rollback)."""
-    try:
-        previous = load_agents_md("production").version
-        mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="previous", version=previous)
-    except Exception:
-        pass
-    mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="production", version=version)
-    mlflow.genai.set_prompt_version_tag(config.PROMPT_NAME, version, "promoted_because", reason[:500])
+def promote(candidate, reason: str) -> dict:
+    """Move @production for whatever the candidate changes: AGENTS.md and/or skills. The previous
+    version keeps an @previous alias. Returns a receipt that rollback() can undo exactly."""
+    spec = as_spec(candidate)
+    receipt = {"reason": reason[:500], "agents": None, "skills": {}}
+    if str(spec.agents) != "production":
+        version = int(load_agents_md(spec.agents).version)
+        previous = int(load_agents_md("production").version)
+        if version != previous:
+            mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="previous", version=previous)
+            mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="production", version=version)
+            mlflow.genai.set_prompt_version_tag(config.PROMPT_NAME, version, "promoted_because", reason[:500])
+            receipt["agents"] = {"from": previous, "to": version}
+    for name, version in spec.skills:
+        full = f"{config.SKILL_PREFIX}{name}"
+        current = pin("production").skills
+        previous = dict(current).get(name)
+        if version is None:
+            mlflow.genai.delete_prompt_alias(full, alias="production")
+        else:
+            if previous is not None:
+                mlflow.genai.set_prompt_alias(full, alias="previous", version=previous)
+            mlflow.genai.set_prompt_alias(full, alias="production", version=version)
+            mlflow.genai.set_prompt_version_tag(full, version, "promoted_because", reason[:500])
+        receipt["skills"][name] = {"from": previous, "to": version}
+    return receipt
 
 
-def rollback() -> int:
-    previous = load_agents_md("previous").version
-    mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="production", version=previous)
-    return int(previous)
+def rollback(receipt: dict | None = None) -> str:
+    """Undo a promotion. Without a receipt, moves AGENTS.md back to @previous (the original
+    behavior). With one, restores exactly the AGENTS.md and skill versions it replaced."""
+    if receipt is None:
+        previous = load_agents_md("previous").version
+        mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="production", version=previous)
+        return f"AGENTS.md -> v{previous}"
+    done = []
+    if receipt.get("agents"):
+        mlflow.genai.set_prompt_alias(config.PROMPT_NAME, alias="production", version=receipt["agents"]["from"])
+        done.append(f"AGENTS.md -> v{receipt['agents']['from']}")
+    for name, change in receipt.get("skills", {}).items():
+        full = f"{config.SKILL_PREFIX}{name}"
+        if change["from"] is None:
+            mlflow.genai.delete_prompt_alias(full, alias="production")
+            done.append(f"skill {name} removed")
+        else:
+            mlflow.genai.set_prompt_alias(full, alias="production", version=change["from"])
+            done.append(f"skill {name} -> v{change['from']}")
+    return ", ".join(done) or "nothing to roll back"
 
 
 def scorer_failures(result, scorers) -> list[str]:
