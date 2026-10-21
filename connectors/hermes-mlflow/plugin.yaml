@@ -1,0 +1,21 @@
+name: mlflow-otel
+version: "0.1.0"
+description: "Trace Hermes turns, model calls and tool calls to a local MLflow server (OTLP)"
+author: "self-improving-agent"
+kind: standalone
+requires_env:
+  - name: MLFLOW_TRACKING_URI
+    description: "MLflow server URL, e.g. http://127.0.0.1:5000"
+    secret: false
+provides_hooks:
+  - pre_llm_call
+  - post_llm_call
+  - on_session_end
+  - on_session_finalize
+  - pre_api_request
+  - post_api_request
+  - api_request_error
+  - pre_tool_call
+  - post_tool_call
+  - subagent_start
+  - subagent_stop

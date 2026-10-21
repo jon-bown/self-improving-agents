@@ -8,9 +8,12 @@ import subprocess
 
 from sia import config, llm
 from sia.agent import openclaw_env
+from sia.scenario import REPO_ROOT
+
+OPENCLAW_PLUGIN_DIR = REPO_ROOT / "connectors" / "openclaw-mlflow"
 
 
-def write_config(mlflow_otel: bool = False, experiment_id: str | None = None) -> dict:
+def write_config(mlflow_otel: bool = False, experiment_id: str | None = None, mlflow_plugin: bool = False) -> dict:
     state = config.OPENCLAW_STATE_DIR
     state.mkdir(parents=True, exist_ok=True)
     cfg: dict = {
@@ -39,6 +42,17 @@ def write_config(mlflow_otel: bool = False, experiment_id: str | None = None) ->
                 "traces": True, "metrics": False, "logs": False,
                 "captureContent": True,
             },
+        }
+    if mlflow_plugin and experiment_id:
+        # The in-repo connector (connectors/openclaw-mlflow): one MLflow trace per OpenClaw run, with
+        # a span per model request and tool call, content included. No install step: loaded by path.
+        plugins = cfg.setdefault("plugins", {})
+        plugins.setdefault("allow", []).append("mlflow-otel")
+        plugins["load"] = {"paths": [str(OPENCLAW_PLUGIN_DIR)]}
+        plugins.setdefault("entries", {})["mlflow-otel"] = {
+            "enabled": True,
+            "hooks": {"allowConversationAccess": True},
+            "config": {"trackingUri": config.TRACKING_URI, "experimentId": experiment_id},
         }
     (state / "openclaw.json").write_text(json.dumps(cfg, indent=2))
     (config.WORKSPACES_DIR / "default").mkdir(parents=True, exist_ok=True)

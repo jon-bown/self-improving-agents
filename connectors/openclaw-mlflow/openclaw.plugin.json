@@ -1,0 +1,27 @@
+{
+  "id": "mlflow-otel",
+  "name": "MLflow Tracing (OTel)",
+  "description": "Export OpenClaw agent runs, model calls and tool calls to an MLflow server as traces over OTLP.",
+  "version": "0.1.0",
+  "activation": { "onStartup": true },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": true },
+      "trackingUri": { "type": "string", "description": "MLflow server URL. Default: $MLFLOW_TRACKING_URI or http://127.0.0.1:5000" },
+      "experimentId": { "type": "string", "description": "Numeric experiment ID. Default: $MLFLOW_EXPERIMENT_ID" },
+      "experimentName": { "type": "string", "description": "Used when no ID is set; created if missing. Default: $MLFLOW_EXPERIMENT_NAME or \"openclaw\"" },
+      "headers": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Extra HTTP headers, e.g. Authorization" },
+      "captureContent": { "type": "boolean", "default": true, "description": "Record prompts, replies, tool arguments and results" },
+      "captureSystemPrompt": { "type": "boolean", "default": false },
+      "maxContentChars": { "type": "integer", "minimum": 256, "default": 20000 },
+      "serviceName": { "type": "string", "default": "openclaw" }
+    }
+  },
+  "uiHints": {
+    "trackingUri": { "label": "MLflow tracking URI", "placeholder": "http://127.0.0.1:5000" },
+    "experimentName": { "label": "Experiment name" },
+    "captureContent": { "label": "Capture message content" }
+  }
+}

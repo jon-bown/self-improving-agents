@@ -9,3 +9,12 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
       - run: .venv/bin/python -m pytest -q
+  openclaw-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24    # runs the TypeScript sources directly (type stripping)
+      - run: npm test
+        working-directory: connectors/openclaw-mlflow

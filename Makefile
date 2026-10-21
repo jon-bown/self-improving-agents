@@ -3,16 +3,22 @@ PY      ?= .venv/bin/python
 PORT    ?= 5000
 L       := levels
 
-.PHONY: help install server setup level0 level1 level2 level3 level4 level5 week drift test rehearse reset
+.PHONY: help install server connect-openclaw connect-hermes setup level0 level1 level2 level3 level4 level5 week drift test rehearse reset
 
 help:           ## list targets
-	@grep -E '^[a-z0-9]+:.*##' Makefile | sed 's/:.*##/\t/'
+	@grep -E '^[a-z0-9-]+:.*##' Makefile | sed 's/:.*##/\t/'
 
 install:        ## create .venv and install the package (needs uv)
 	uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
 
 server:         ## run the MLflow tracking server (sqlite backend; enables online scoring jobs)
 	$(PY) -m mlflow server --backend-store-uri sqlite:///mlflow.db --port $(PORT)
+
+connect-openclaw: ## trace your own OpenClaw (its active config) to the MLflow server
+	$(PY) connectors/connect.py openclaw
+
+connect-hermes: ## trace your own Hermes Agent ($$HERMES_HOME or ~/.hermes) to the MLflow server
+	$(PY) connectors/connect.py hermes
 
 setup:          ## Level 0 setup: register AGENTS.md v1, isolated OpenClaw profile
 	$(PY) $(L)/level0_instrument/01_setup.py

@@ -10,3 +10,5 @@ mlartifacts/
 proposals/
 .pytest_cache/
 .DS_Store
+connectors/openclaw-mlflow/node_modules/
+connectors/openclaw-mlflow/dist/

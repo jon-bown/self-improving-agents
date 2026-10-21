@@ -6,7 +6,7 @@ Before anything can improve, two things must be true:
 
 This script handles (1) and prepares OpenClaw. 02_first_traces.py handles (2).
 
-    python levels/level0_instrument/01_setup.py [--mlflow-otel]
+    python levels/level0_instrument/01_setup.py [--mlflow-plugin] [--mlflow-otel]
 """
 
 import argparse
@@ -19,6 +19,8 @@ from sia.workspace import seed_agents_md
 parser = argparse.ArgumentParser()
 parser.add_argument("--mlflow-otel", action="store_true",
                     help="also stream OpenClaw's internal spans to MLflow via OTLP (needs the diagnostics-otel plugin)")
+parser.add_argument("--mlflow-plugin", action="store_true",
+                    help="also trace every OpenClaw run (prompts, model calls, tool calls) with connectors/openclaw-mlflow")
 args = parser.parse_args()
 
 experiment_id = tracking.setup()
@@ -39,7 +41,7 @@ except Exception:
     print(f"Registered '{config.PROMPT_NAME}' v{v1.version} and pointed 'production' at it")
 
 # ---- 2. Isolated OpenClaw profile ----------------------------------------------------------
-openclaw_setup.write_config(mlflow_otel=args.mlflow_otel, experiment_id=experiment_id)
+openclaw_setup.write_config(mlflow_otel=args.mlflow_otel, experiment_id=experiment_id, mlflow_plugin=args.mlflow_plugin)
 print("OpenClaw:", openclaw_setup.check())
 print(f"Provider: {config.PROVIDER}   backend: {config.BACKEND}")
 print(f"Agent model: {config.AGENT_MODEL}   judge model: {config.JUDGE_MODEL}   "

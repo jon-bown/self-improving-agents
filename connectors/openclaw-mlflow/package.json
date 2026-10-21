@@ -1,0 +1,32 @@
+{
+  "name": "openclaw-mlflow-otel",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin: trace agent runs, model calls and tool calls to MLflow over OTLP",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "index.ts",
+    "src",
+    "dist",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.10.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.10.5"
+    }
+  }
+}

@@ -91,7 +91,11 @@ def run_openclaw(question: str, workspace: Path) -> str:
     ]
     with mlflow.start_span("openclaw.agent", span_type=SpanType.CHAIN) as span:
         span.set_inputs({"message": question, "workspace": str(workspace)})
-        proc = subprocess.run(cmd, env=openclaw_env(workspace), capture_output=True, text=True, timeout=600)
+        env = openclaw_env(workspace)
+        # With the connectors/openclaw-mlflow plugin enabled, OpenClaw's own trace of this run is tagged
+        # with ours, so the two can be joined (`tags.sia.parent_trace_id = '<trace id>'`).
+        env["MLFLOW_OTEL_TRACE_TAGS"] = json.dumps({"sia.parent_trace_id": span.trace_id, "sia.workspace": workspace.name})
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=600)
         if proc.returncode != 0:
             raise RuntimeError(f"openclaw exited {proc.returncode}: {proc.stderr[-2000:]}")
         payload = json.loads(proc.stdout)

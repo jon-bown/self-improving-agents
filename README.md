@@ -93,9 +93,22 @@ is where that would show up.
 | `offline` | a deterministic simulator that follows a few instructions in `AGENTS.md` | rehearsals and tests without keys |
 
 OpenClaw needs Node and `npm i -g openclaw`. `make setup` writes the isolated config and validates it. Optional:
-`python levels/level0_instrument/01_setup.py --mlflow-otel` also streams OpenClaw's internal spans (model and
-tool calls) to MLflow's OTLP endpoint via the `diagnostics-otel` plugin. The MLflow team also publishes an
-OpenClaw tracing plugin (`openclaw plugins install @mlflow/mlflow-openclaw`, release candidate as of 0.2.0).
+`python levels/level0_instrument/01_setup.py --mlflow-plugin` also traces each OpenClaw run from the inside:
+prompt, every model request, every tool call, and token usage. The trace is tagged with the
+`acme_support_agent` trace that ran it. This uses the dependency-free plugin in `connectors/openclaw-mlflow`.
+`--mlflow-otel` instead streams OpenClaw's diagnostic spans via the `diagnostics-otel` plugin.
+
+### Trace your own agent
+
+The same connectors work for your everyday OpenClaw or [Hermes Agent](https://github.com/NousResearch/hermes-agent):
+
+```bash
+make server                       # MLflow on :5000
+make connect-openclaw             # or: python connectors/connect.py openclaw | hermes | status
+```
+
+Each OpenClaw run or Hermes turn becomes an MLflow trace, grouped by session. See
+[`connectors/README.md`](connectors/README.md).
 
 ## Walkthrough
 
@@ -189,6 +202,7 @@ src/sia/
   reviewers.py       simulated reviewers (with deliberate disagreement)
   traffic.py         simulated production traffic + labeling
 levels/              one folder per level; each script's docstring explains the step
+connectors/          OpenClaw + Hermes plugins that trace any run to MLflow over OTLP; connect.py wires them up
 tests/unit           offline smoke tests (CI, no keys)
 tests/agent          the regression gate (@mlflow.test over the dataset + holdout)
 ```
