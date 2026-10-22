@@ -1,0 +1,35 @@
+# The regression gate: every row of the agent's evaluation dataset is a test, run against your
+# agent with the judges. Point MLFLOW_TRACKING_URI at a persistent server so the dataset, the
+# Prompt Registry and run history are shared with the scheduled loop.
+name: selfimprove-regression
+on:
+  pull_request:
+    paths: ["harness/**"]
+  workflow_dispatch:
+    inputs:
+      prompt_ref:
+        description: "instructions version or alias to test"
+        default: production
+jobs:
+  regression:
+    if: ${{ vars.SELFIMPROVE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: harness
+    env:
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      SI_EXPERIMENT: ${{ vars.SI_EXPERIMENT || 'my-agent' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # optional cheap first-pass judge (Jev); leave unset to use the text judge alone
+      SI_FAST_JUDGE_MODEL: ${{ vars.SI_FAST_JUDGE_MODEL }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      SI_PROMPT_REF: ${{ inputs.prompt_ref || 'production' }}
+      SI_REGRESSION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+      - run: cp .env.example .env   # your agent settings; override any of them with repository variables
+      - run: .venv/bin/python -m pytest -p mlflow.pytest.plugin tests/regression -n 4 -q

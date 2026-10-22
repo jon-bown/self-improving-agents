@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-evaluation": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "agent-evaluation/SKILL.md",
+      "computedHash": "aeb01be4db9243c96eaf85625fdec11b167a9a4b5b9466ccd3cc853419b9baa6"
+    },
+    "analyzing-mlflow-session": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "analyze-mlflow-chat-session/SKILL.md",
+      "computedHash": "6e53821cfce72e74d68615012e2088b29f3d415b5ba36de6e4299e598f85a220"
+    },
+    "analyzing-mlflow-trace": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "analyze-mlflow-trace/SKILL.md",
+      "computedHash": "3bfe2037d37278be311f9473a836098b2f5f7eeb9640c2850f3de9337e898d8a"
+    },
+    "build-a-scorer": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "build-a-scorer/SKILL.md",
+      "computedHash": "c3f14653d7c875c6898b76ab957ada21745b82fda3f2ad2e23bfd39eb47d517f"
+    },
+    "debug-agent": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "debug-agent/SKILL.md",
+      "computedHash": "2d4b39b1f6a3a7bae7aa6f56850f88782e7186f6f887b2278b6b4d568571d26c"
+    },
+    "fix-agent-issue": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "fix-agent-issue/SKILL.md",
+      "computedHash": "109af9cfc5a7ff6610a81987d1ee0e6afdcccbc476e95635b74d65bacf885d5d"
+    },
+    "instrumenting-with-mlflow-tracing": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "instrumenting-with-mlflow-tracing/SKILL.md",
+      "computedHash": "86bea7f59a5ebed38728ba42f84632f2824e4d9868b33bce5a9247a9c4a73c29"
+    },
+    "mlflow-agent": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "mlflow-agent/SKILL.md",
+      "computedHash": "32b2d50064272cdf7a09caec79f1eb4a0077632a76231427988e134d63442143"
+    },
+    "mlflow-onboarding": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "mlflow-onboarding/SKILL.md",
+      "computedHash": "c37437396ad84f847ea439d53928fd2f45abb229323e47ea70187000d26b7560"
+    },
+    "querying-mlflow-metrics": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "querying-mlflow-metrics/SKILL.md",
+      "computedHash": "851006ac9d4e3d5b40dea8f304c1f66c2badf544d3b3e40b62bf0b2aa7775041"
+    },
+    "retrieving-mlflow-traces": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "retrieving-mlflow-traces/SKILL.md",
+      "computedHash": "961be887ab8696d837ea63d20071d4e136c647c12461eb2407491b88f199ed44"
+    },
+    "sagemaker-mlflow": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "sagemaker-mlflow/SKILL.md",
+      "computedHash": "5926240a849253e30735d2788613b9adac149114e6ebda941eeb7132135fe4bd"
+    },
+    "searching-mlflow-docs": {
+      "source": "mlflow/skills",
+      "sourceType": "github",
+      "skillPath": "searching-mlflow-docs/SKILL.md",
+      "computedHash": "b493bd3becb75a2bed6a6cb385700b25fe5ca0656a0c505756af4873d4c237dd"
+    }
+  }
+}

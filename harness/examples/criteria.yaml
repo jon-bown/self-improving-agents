@@ -1,0 +1,64 @@
+# What "good" means for the example agent. `selfimprove` builds its verifier from this file.
+# Cheapest first: code checks, then LLM judges. See selfimprove/signals.py for every option.
+
+# The alignable judge. Same name as the reviewers' feedback ("quality"), so the harness can
+# measure how often it agrees with them and align it when it drifts (Part 3, section 5).
+quality:
+  instructions: |
+    You are reviewing an answer from Acme Cloud's customer support agent.
+
+    Question: {{ inputs }}
+    Answer: {{ outputs }}
+
+    Would a careful support lead send this answer to the customer as-is? Return true if it is
+    correct, current, and gets to the point; otherwise false.
+  # The same question for a first-pass decision model (SI_FAST_JUDGE_MODEL, e.g. Jev), phrased
+  # as a yes/no. Verdicts in the uncertain band are re-judged with the instructions above.
+  fast_instructions: >-
+    Answer yes or no. Would a careful support lead send the answer in {{ outputs }} to the
+    customer who asked {{ inputs }} as-is, because it is correct, current, and gets to the point?
+
+# Code checks: free, deterministic, and safe to run on every production trace.
+checks:
+  - name: no_stale_policy
+    must_not_match: ['30[- ]day', '24 hours? (link|valid)|valid for 24 hours']
+    rationale: "Quotes outdated policy (refunds are 14 days since July 2026; reset links last 15 minutes)."
+    must_pass: true            # a candidate that fails this on any row never ships
+  - name: no_disclaimer_opener
+    first_sentence_not_match: ['policies (can|may) vary', 'terms of service', 'double[- ]check']
+    rationale: "A cheap code proxy for the leads_with_answer judge."
+  - name: looked_up_policy
+    requires_tool: lookup_policy
+    rationale: "Answers must come from the current policy, not memory."
+  - name: concise
+    max_words: 120
+
+# Grounded: span checks on a tool call, then a judge on whether the answer stays within what
+# the tool returned (Part 3, section 3). The checks fail a missing, failed, or empty lookup for
+# free; only the rest reach a model. With SI_FAST_JUDGE_MODEL set, Jev answers first.
+grounded:
+  - name: grounded_in_policy
+    tool: lookup_policy
+    requires_input: topic
+    instructions: >-
+      Answer yes or no. Does the answer in {{ outputs }} make only claims that the policy text in
+      {{ inputs }} supports?
+
+# Guidelines judges: a requirement in plain English becomes a pass/fail judge.
+guidelines:
+  - name: leads_with_answer
+    guidelines: >-
+      The first sentence of the response must directly answer the customer's question. FAIL if
+      it opens with a disclaimer, a reminder to check the Terms of Service, a pleasantry, or a
+      restatement of the question.
+  - name: no_guessing
+    guidelines: >-
+      The response must not present a guess as fact. If the agent is unsure it must say so or
+      offer to escalate. FAIL if it confidently states plan limits, timelines, or feature
+      availability with hedges like 'should', 'usually', or 'I believe'.
+
+# Scorers that need expectations; they run on the dataset only.
+reference: [key_facts, correctness]
+
+# Your own scorers, if YAML is not enough: a list of MLflow scorers, or a function returning one.
+# python: examples.my_scorers:SCORERS

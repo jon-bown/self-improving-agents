@@ -14,6 +14,12 @@ traces ─┤ human feedback / expectations├─────▶ eval dataset  �
                                               └───────────────┘      └──────────────────┘
 ```
 
+> **Bring your own agent: [`harness/`](harness/README.md).** The same framework as a reusable
+> MLflow harness, `selfimprove`, for any agent (a Python function, an HTTP service, a CLI, OpenClaw,
+> Hermes), configured from `.env`. It ships the Part 3 jobs as workflows (CLI + GitHub Actions),
+> walkthrough notebooks for the manual steps, and a `self-improving-agent` skill that applies the
+> framework with MLflow and the coding agent of your choice.
+
 ## The levels
 
 Every level runs the same loop. Two things change: **who writes the candidate** and **who approves it**.
@@ -94,8 +100,10 @@ is where that would show up.
 
 OpenClaw needs Node and `npm i -g openclaw`. `make setup` writes the isolated config and validates it. Optional:
 `python levels/level0_instrument/01_setup.py --mlflow-otel` also streams OpenClaw's internal spans (model and
-tool calls) to MLflow's OTLP endpoint via the `diagnostics-otel` plugin. The MLflow team also publishes an
-OpenClaw tracing plugin (`openclaw plugins install @mlflow/mlflow-openclaw`, release candidate as of 0.2.0).
+tool calls) to MLflow's OTLP endpoint via the `diagnostics-otel` plugin. For MLflow-native OpenClaw traces,
+[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md) has the MLflow team's tracing plugin with the
+fixes it needs on OpenClaw 2026.10. One command builds it and connects any OpenClaw profile to an MLflow server:
+`connectors/openclaw-mlflow/install.sh --tracking-uri http://localhost:5000 --experiment openclaw`.
 
 ## Walkthrough
 
