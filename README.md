@@ -20,6 +20,42 @@ traces ─┤ human feedback / expectations├─────▶ eval dataset  �
 > walkthrough notebooks for the manual steps, and a `self-improving-agent` skill that applies the
 > framework with MLflow and the coding agent of your choice.
 
+## What's in this repo
+
+| | what | where |
+|---|---|---|
+| **The tutorial** | the Acme Cloud support agent and the loop built up over six levels, from tracing to an unattended loop | `levels/`, `src/sia/`, `scenario/`, `tests/` |
+| **The harness** | `selfimprove`: the same loop for an agent you bring, with workflows, notebooks and a skill | [`harness/`](harness/README.md) |
+| **The OpenClaw connector** | MLflow's OpenClaw tracing plugin, fixed for OpenClaw 2026.10 | [`connectors/openclaw-mlflow/`](connectors/openclaw-mlflow/README.md) |
+| **MLflow agent skills** | MLflow's skills for coding agents (trace analysis, evaluation, scorers, debugging), pinned in `skills-lock.json` | `.agents/skills/` |
+| **CI** | the tutorial's offline smoke test and regression gate, and the harness's loop, offline and regression jobs | `.github/workflows/` |
+
+### The OpenClaw MLflow connector
+
+[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md) is an OpenClaw plugin
+(`mlflow-openclaw`) that logs every OpenClaw agent run to MLflow as a trace: an `AGENT` root
+span with `LLM`, `TOOL` and sub-agent spans under it, plus token usage, cost, model, session and
+user. It's the MLflow team's `@mlflow/mlflow-openclaw` integration with five fixes it needs on
+OpenClaw 2026.10, listed in its README. It works with any OpenClaw profile, not only this repo's
+agent, and exports to any MLflow server over HTTP.
+
+Install it into your own OpenClaw profile from `connectors/openclaw-mlflow`:
+
+```bash
+./install.sh --tracking-uri http://localhost:5000 --experiment openclaw
+```
+
+To do the same by hand: build the archive with `./install.sh --build-only`, stop the gateway
+(`openclaw gateway stop`), run `openclaw plugins install --force --accept-capabilities` with the
+archive, run `openclaw mlflow configure`, then `openclaw gateway start`. `openclaw mlflow status`
+shows the settings. The [connector README](connectors/openclaw-mlflow/README.md) covers each
+step, changing settings, updating and removing it.
+
+In this repo, the harness installs it into its own isolated OpenClaw profile when
+`SI_OPENCLAW_MLFLOW=1` (see [`harness/`](harness/README.md)). Each harness call then has two
+traces: the harness's own, with prompt version and judge feedback, and OpenClaw's, with the
+model and tool calls.
+
 ## The levels
 
 Every level runs the same loop. Two things change: **who writes the candidate** and **who approves it**.
@@ -199,6 +235,12 @@ src/sia/
 levels/              one folder per level; each script's docstring explains the step
 tests/unit           offline smoke tests (CI, no keys)
 tests/agent          the regression gate (@mlflow.test over the dataset + holdout)
+scripts/             rehearse_offline.sh: every level offline, in a throwaway store (make rehearse)
+harness/             selfimprove: the loop for an agent you bring (its own README)
+connectors/
+  openclaw-mlflow/   MLflow tracing plugin for OpenClaw 2026.10 (its own README)
+.agents/skills/      MLflow agent skills (skills-lock.json pins them)
+.github/workflows/   CI for the tutorial and the harness
 ```
 
 ## Notes on MLflow 3.16.1
