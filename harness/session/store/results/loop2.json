@@ -1,0 +1,377 @@
+{
+  "loop": 2,
+  "title": "Assisted: the agent improvises when the docs are silent",
+  "failure": "hallucination",
+  "criteria": "criteria/loop2.yaml",
+  "traffic": "traffic/loop2.txt",
+  "production_before": 2,
+  "before_traces": [
+    "tr-df740928254108d190a6aa9c7c81b57b",
+    "tr-44024cd4dbdd83a81f781498243020c7",
+    "tr-216131fa6443a482f9cedb0dae3f1d71",
+    "tr-70495bc6aa8e46895423bd599fc1cd76",
+    "tr-39ed81ee98c31e7412c45237099ce79c",
+    "tr-13faaea6f2e9b1be0df481ae5ade679f",
+    "tr-036510146b92892190c4da6c4d59cb57",
+    "tr-26e26b99805b3c9ac25a5db2ecb0f32a"
+  ],
+  "score": "[score] scored: 16 new production traces scored with [read_knowledge, no_stale_facts, grounded_in_docs, escalates_unknowns, quality]",
+  "before": {
+    "labeled": 8,
+    "failed": 4,
+    "failure_rate": 0.5
+  },
+  "triage": {
+    "outcome": "proposed",
+    "message": "4 tests in 3 themes from 16 traces, 0 already covered (proposal on run fbe6cd0f)",
+    "metrics": {
+      "traces_in": 16,
+      "human_failures": 4,
+      "contradictions": 0,
+      "needs_expectation": 0,
+      "judge_only_failures": 0,
+      "themes_out": 3,
+      "tests_proposed": 4,
+      "already_covered": 0
+    }
+  },
+  "approve": {
+    "outcome": "merged",
+    "message": "0 tests merged, 4 sent to the human queue, theme judges []; dataset now 15 records (4 train, 11 holdout) by source {'golden': 8, 'human_fail': 7}",
+    "metrics": {
+      "tests_approved": 0,
+      "tests_flagged": 4,
+      "theme_judges": 0
+    }
+  },
+  "dataset": "15 records (4 train, 11 holdout) by source {'golden': 8, 'human_fail': 7}",
+  "queue_review": {
+    "accepted": 4,
+    "dataset": "19 records (8 train, 11 holdout) by source {'golden': 8, 'human_fail': 7, 'queue': 4}"
+  },
+  "attempts": [
+    {
+      "improver": "analyst",
+      "outcome": "candidate",
+      "message": "v3 from analyst (10 failures, 4 train rows): Removed the instruction to invent plausible SaaS specifics and never admit gaps. Replaced it with a rule to stick to the files and use a fixed escalation line (docs don't cover it; specialist replies ",
+      "candidate": 3,
+      "gate": {
+        "outcome": "rejected",
+        "message": "gate FAIL: v3 vs v2 -- train: worse than production (-14%)",
+        "run_id": "c955365a4c4c4640bfbda91560a70709",
+        "passed": false,
+        "reasons": "train: worse than production (-14%)",
+        "cards": {
+          "holdout/candidate": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 0.9090909090909091,
+            "read_knowledge": 0.9090909090909091,
+            "escalates_unknowns": 0.45454545454545453,
+            "correctness": 0.5454545454545454,
+            "quality": 0.7272727272727273,
+            "grounded_in_docs": 0.8181818181818182
+          },
+          "holdout/baseline": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 1.0,
+            "read_knowledge": 0.9090909090909091,
+            "correctness": 0.7272727272727273,
+            "quality": 0.6363636363636364,
+            "escalates_unknowns": 0.36363636363636365,
+            "grounded_in_docs": 0.6363636363636364
+          },
+          "train/candidate": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 1.0,
+            "read_knowledge": 1.0,
+            "correctness": 0.5,
+            "quality": 0.25,
+            "grounded_in_docs": 0.5,
+            "escalates_unknowns": 0.75
+          },
+          "train/baseline": {
+            "has_key_facts": 1.0,
+            "no_stale_facts": 1.0,
+            "read_knowledge": 1.0,
+            "correctness": 1.0,
+            "quality": 0.25,
+            "grounded_in_docs": 0.75,
+            "escalates_unknowns": 1.0
+          }
+        },
+        "train_gain": -0.1428571428571428,
+        "holdout_gain": 0.012987012987012991
+      }
+    },
+    {
+      "improver": "analyst",
+      "outcome": "candidate",
+      "message": "v4 from analyst (10 failures, 8 train rows): Removed the instruction to never admit not knowing and to invent specifics; replaced with: answer only from files, and for uncovered questions say docs don't cover it and a specialist will reply by em",
+      "candidate": 4,
+      "gate": {
+        "outcome": "awaiting_approval",
+        "message": "v4 passed; run `selfimprove promote 4` to ship it",
+        "run_id": "cce1008a263f4a58b71038defaef48a5",
+        "passed": true,
+        "reasons": "",
+        "cards": {
+          "holdout/candidate": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 1.0,
+            "read_knowledge": 0.9090909090909091,
+            "escalates_unknowns": 0.5454545454545454,
+            "correctness": 0.7272727272727273,
+            "quality": 0.5454545454545454,
+            "grounded_in_docs": 0.6363636363636364
+          },
+          "holdout/baseline": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 0.9090909090909091,
+            "read_knowledge": 0.9090909090909091,
+            "correctness": 0.6363636363636364,
+            "quality": 0.36363636363636365,
+            "grounded_in_docs": 0.6363636363636364,
+            "escalates_unknowns": 0.45454545454545453
+          },
+          "train/candidate": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 1.0,
+            "read_knowledge": 1.0,
+            "quality": 0.625,
+            "grounded_in_docs": 0.75,
+            "correctness": 0.875,
+            "escalates_unknowns": 0.625
+          },
+          "train/baseline": {
+            "no_stale_facts": 1.0,
+            "has_key_facts": 1.0,
+            "read_knowledge": 1.0,
+            "correctness": 0.625,
+            "grounded_in_docs": 0.75,
+            "quality": 0.5,
+            "escalates_unknowns": 0.42857142857142855
+          }
+        },
+        "train_gain": 0.0892857142857143,
+        "holdout_gain": 0.06493506493506496
+      }
+    }
+  ],
+  "improve": {
+    "outcome": "candidate",
+    "message": "v4 from analyst (10 failures, 8 train rows): Removed the instruction to never admit not knowing and to invent specifics; replaced with: answer only from files, and for uncovered questions say docs don't cover it and a specialist will reply by em"
+  },
+  "candidate": 4,
+  "gate": {
+    "outcome": "awaiting_approval",
+    "message": "v4 passed; run `selfimprove promote 4` to ship it",
+    "run_id": "cce1008a263f4a58b71038defaef48a5",
+    "passed": true,
+    "reasons": "",
+    "cards": {
+      "holdout/candidate": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 0.9090909090909091,
+        "escalates_unknowns": 0.5454545454545454,
+        "correctness": 0.7272727272727273,
+        "quality": 0.5454545454545454,
+        "grounded_in_docs": 0.6363636363636364
+      },
+      "holdout/baseline": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 0.9090909090909091,
+        "read_knowledge": 0.9090909090909091,
+        "correctness": 0.6363636363636364,
+        "quality": 0.36363636363636365,
+        "grounded_in_docs": 0.6363636363636364,
+        "escalates_unknowns": 0.45454545454545453
+      },
+      "train/candidate": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 1.0,
+        "quality": 0.625,
+        "grounded_in_docs": 0.75,
+        "correctness": 0.875,
+        "escalates_unknowns": 0.625
+      },
+      "train/baseline": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 1.0,
+        "correctness": 0.625,
+        "grounded_in_docs": 0.75,
+        "quality": 0.5,
+        "escalates_unknowns": 0.42857142857142855
+      }
+    },
+    "train_gain": 0.0892857142857143,
+    "holdout_gain": 0.06493506493506496
+  },
+  "promote": "[promote] promoted: v2 -> v4",
+  "production_after": 4,
+  "after_traces": [
+    "tr-976302a28904bae787caa8f07a33bdea",
+    "tr-64d9a4c46edde223164c65e4c4d2c7ed",
+    "tr-8f27363a12cf91f022fc9adbc74126dd",
+    "tr-aa59c5ace88532ce46699c3c36acaebc",
+    "tr-3ae50347518812436c032b1eeb911431",
+    "tr-fd2bbfb5348c013031633660a5ebd013",
+    "tr-1a013f59b52ceec1f9ead57b42b930a0",
+    "tr-f57a2788b6fad3593e7765096428d041"
+  ],
+  "after": {
+    "labeled": 8,
+    "failed": 0,
+    "failure_rate": 0.0
+  },
+  "minutes": 46.9,
+  "queue": [
+    {
+      "id": "ecaf327f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test contradicts itself and is not checkable. The theme is \"no_escalation_for_uncovered_questions\", which implies the agent should not escalate. But the expected response escalates: \"A specialist will reply by email within 1 business day.\" The \"within 1 business day\" commitment is a specific promise with no stated basis, so the test could reward an invented SLA. The \"why proposed\" text criticizes an agent answer's filler and its mention of an internal \"billing p",
+      "trace_id": "tr-13faaea6f2e9b1be0df481ae5ade679f",
+      "record": {
+        "inputs": {
+          "question": "Can I pay by wire transfer?"
+        },
+        "expectations": {
+          "expected_response": "Our documentation doesn't cover payment methods beyond billing currencies. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457394",
+          "source_trace": "tr-13faaea6f2e9b1be0df481ae5ade679f",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The answer does not say whether wire transfer is supported. It admits uncertainty, which is honest, but then adds filler (currencies, invoice downloads, billing contact updates) that doesn't address the question. It also refers to an internal \"billing policy file\", which a customer shouldn't see. It",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "3e7d022d",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test has three problems.\n\n1. The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" reads as \"don't escalate\", but the expected response escalates to a specialist by email. The theme should name the behavior being tested.\n\n2. The rationale doesn't match the input. It discusses export claims (Settings \u2192 Data \u2192 Export, CSV/JSON, 24 hours) and an answer that points the user to the upload dialog or Billing. The input is a plain question about",
+      "trace_id": "tr-39ed81ee98c31e7412c45237099ce79c",
+      "record": {
+        "inputs": {
+          "question": "What's the maximum file size I can upload?"
+        },
+        "expectations": {
+          "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457396",
+          "source_trace": "tr-39ed81ee98c31e7412c45237099ce79c",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The answer correctly says the files don't list an upload size limit, and its export claims (Settings \u2192 Data \u2192 Export, CSV or JSON, up to 24 hours for large workspaces) match the files. But it also tells the customer to check \"the upload dialog or the plan details under Settings \u2192 Billing\" for the ma",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "f7948a8d",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test has three problems. (1) The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" implies the agent should not escalate, but the expected response escalates: \"A specialist will reply by email within 1 business day.\" The theme therefore doesn't name the behavior being tested. (2) The rationale rests on the agent's own output. It says \"the response itself admits the policy files don't cover certifications\", which is the agent's behavior. ",
+      "trace_id": "tr-70495bc6aa8e46895423bd599fc1cd76",
+      "record": {
+        "inputs": {
+          "question": "Is Acme Cloud SOC 2 certified?"
+        },
+        "expectations": {
+          "expected_response": "Our documentation doesn't cover certifications. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457398",
+          "source_trace": "tr-70495bc6aa8e46895423bd599fc1cd76",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The guideline applies because the question is about SOC 2 certification, and the response itself admits the policy files don't cover certifications. In that case the response must say the documentation doesn't cover it and tell the customer a specialist will reply by email within 1 business day. It ",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "e942106f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: I'm rejecting this for three reasons. (1) The rationale relies on the agent's own output. It says the rate limit isn't covered \"which the response itself says\", and it gives no independent evidence that the documentation lacks this information. If the docs do state Pro rate limits, the expected answer is wrong. The test is only valid if the knowledge base is fixed and known not to contain the answer, and nothing here establishes that. (2) The theme \"no_escalation_fo",
+      "trace_id": "tr-df740928254108d190a6aa9c7c81b57b",
+      "record": {
+        "inputs": {
+          "question": "What's the API rate limit for Pro accounts?"
+        },
+        "expectations": {
+          "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457400",
+          "source_trace": "tr-df740928254108d190a6aa9c7c81b57b",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The question asks about the API rate limit for Pro accounts, which the response itself says is not covered in the documentation it checked, so the guideline applies. The guideline requires two things: the response must say the documentation does not cover it, and it must tell the customer a speciali",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    }
+  ],
+  "finished_at": "2026-10-22 05:24"
+}

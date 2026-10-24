@@ -1,0 +1,21 @@
+# The OpenClaw MLflow connector: typecheck, unit tests and build. No OpenClaw needed.
+name: openclaw-mlflow
+on:
+  push:
+    paths: ["connectors/openclaw-mlflow/**", ".github/workflows/openclaw-mlflow.yml"]
+  pull_request:
+    paths: ["connectors/openclaw-mlflow/**", ".github/workflows/openclaw-mlflow.yml"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: connectors/openclaw-mlflow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: ./install.sh --build-only

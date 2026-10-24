@@ -95,3 +95,19 @@ def test_call_uses_its_workspace_and_rewrites_stale_profile(settings, monkeypatc
 
     assert calls[0]["OPENCLAW_WORKSPACE_DIR"] == str(ws)
     assert "workspace" not in json.loads(path.read_text())["agents"]["defaults"]
+
+
+def test_call_waits_out_another_run_on_the_profile(settings, monkeypatch, tmp_path):
+    # A second `openclaw agent` on the same profile fails while the first holds its state database.
+    settings()
+    outputs = [(1, "", "Error: Another OpenClaw process is using your data."),
+               (0, json.dumps({"payloads": [{"text": "14 days"}]}), "")]
+
+    def fake_run(cmd, env, **kwargs):
+        code, out, err = outputs.pop(0)
+        return openclaw.subprocess.CompletedProcess(cmd, code, out, err)
+
+    monkeypatch.setattr(openclaw.subprocess, "run", fake_run)
+    monkeypatch.setattr(openclaw.time, "sleep", lambda s: None)
+    assert openclaw.call_openclaw("refund window?", "be Acme", tmp_path / "ws") == "14 days"
+    assert outputs == []

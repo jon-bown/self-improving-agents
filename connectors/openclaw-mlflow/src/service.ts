@@ -857,19 +857,24 @@ export function createMLflowService(
 
       const userId = ctx.userId as string | undefined;
 
-      queueMicrotask(() => {
-        void (async () => {
-          try {
-            const t = activeTraces.get(sessionKey);
-            if (t) {
-              activeTraces.delete(sessionKey);
-              forgetSession(sessionKey);
-              await finalizeTrace(sessionKey, t, userId, () => flushWithRetry('agent-end'));
+      // Return the flush: OpenClaw awaits agent_end handlers (up to 30 s) before a one-shot
+      // `openclaw agent` run exits. Fire-and-forget lost the trace whenever the process exited
+      // first.
+      return new Promise<void>((resolve) => {
+        queueMicrotask(() => {
+          void (async () => {
+            try {
+              const t = activeTraces.get(sessionKey);
+              if (t) {
+                activeTraces.delete(sessionKey);
+                forgetSession(sessionKey);
+                await finalizeTrace(sessionKey, t, userId, () => flushWithRetry('agent-end'));
+              }
+            } catch {
+              // Silently ignore finalization errors
             }
-          } catch {
-            // Silently ignore finalization errors
-          }
-        })();
+          })().finally(resolve);
+        });
       });
     });
   }

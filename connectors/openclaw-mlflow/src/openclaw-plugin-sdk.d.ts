@@ -48,7 +48,7 @@ declare module 'openclaw/plugin-sdk/plugin-entry' {
         }) => Promise<unknown>;
       };
     };
-    on: (event: string, handler: (event: unknown, ctx: unknown) => void) => void;
+    on: (event: string, handler: (event: unknown, ctx: unknown) => void | Promise<void>) => void;
   };
 
   export function definePluginEntry(options: {

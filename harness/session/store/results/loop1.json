@@ -1,0 +1,86 @@
+{
+  "loop": 1,
+  "title": "Manual: the agent skips the lookup",
+  "failure": "lookup",
+  "criteria": "criteria/loop1.yaml",
+  "traffic": "traffic/loop1.txt",
+  "production_before": 1,
+  "before_traces": [
+    "tr-4d5110eed80f79f61e8597da965bdb72",
+    "tr-3d4b2fe91cf4ddc8810b19e63e8b0e53",
+    "tr-4cf66e65c3588d07968c49938d0dcc44",
+    "tr-6fae2f35eeff5c593917603ed2281357",
+    "tr-2ef771a22f48f53e946a4dd23bf1e18f",
+    "tr-da430e5141adba2781bb792114f78416",
+    "tr-d08bdd861357c9b7bc9419f9b784d496",
+    "tr-27dc345103136019241e1e2cc6e10051"
+  ],
+  "score": "[score] scored: 8 new production traces scored with [read_knowledge, no_stale_facts, quality]",
+  "before": {
+    "labeled": 8,
+    "failed": 7,
+    "failure_rate": 0.875
+  },
+  "tests_added": 7,
+  "dataset": "15 records (4 train, 11 holdout) by source {'golden': 8, 'human_fail': 7}",
+  "candidate": 2,
+  "gate": {
+    "outcome": "awaiting_approval",
+    "message": "v2 passed; run `selfimprove promote 2` to ship it",
+    "run_id": "14799d4cf59845238f1c64a1823c6a93",
+    "passed": true,
+    "reasons": "",
+    "cards": {
+      "holdout/candidate": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 0.9090909090909091,
+        "correctness": 0.7272727272727273,
+        "quality": 0.45454545454545453
+      },
+      "holdout/baseline": {
+        "no_stale_facts": 0.2727272727272727,
+        "has_key_facts": 0.36363636363636365,
+        "read_knowledge": 0.0,
+        "correctness": 0.0,
+        "quality": 0.09090909090909091
+      },
+      "train/candidate": {
+        "no_stale_facts": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 1.0,
+        "correctness": 1.0,
+        "quality": 0.5
+      },
+      "train/baseline": {
+        "no_stale_facts": 0.25,
+        "has_key_facts": 1.0,
+        "read_knowledge": 0.0,
+        "correctness": 0.0,
+        "quality": 0.0
+      }
+    },
+    "train_gain": 0.65,
+    "holdout_gain": 0.6727272727272726
+  },
+  "promote": "[promote] promoted: v1 -> v2",
+  "production_after": 2,
+  "after_traces": [
+    "tr-3ae0b56021da98a38038cadb00b7fcc7",
+    "tr-57734da87a38d384fe83bb88f3484218",
+    "tr-79ae6931b82dde11cb2aa0513904fca8",
+    "tr-d33d497dd8525eafcfbef09746f53e62",
+    "tr-a3298eef2a39a8b301846be48fc107ca",
+    "tr-7673aa222fd87acee3ef55eeab8bb039",
+    "tr-ee66081878b98aed2261d0fb58105237",
+    "tr-5568016b87cb8420f2aa8a7e4576a943"
+  ],
+  "after": {
+    "labeled": 8,
+    "failed": 0,
+    "failure_rate": 0.0
+  },
+  "minutes": 24.6,
+  "queue": [],
+  "finished_at": "2026-10-22 04:36"
+}

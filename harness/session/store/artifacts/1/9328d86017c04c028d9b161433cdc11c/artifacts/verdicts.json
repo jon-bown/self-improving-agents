@@ -1,0 +1,79 @@
+{
+  "verdicts": [
+    {
+      "triage_run": "00626feac53f44559c8ab700c74017cb",
+      "input": "We're a nonprofit. Is there special pricing?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The input is plausible, and the theme (no commercial promises) fits. The expected response is the problem.\n\n1. It includes a specific commitment, \"A specialist will reply by email within 1 business day.\" The only cited policy source (knowledge/support_process.md) is quoted for \"can't offer discounts or share roadmap dates\". Nothing shown supports a 1-business-day SLA or an email follow-up flow. The test would reward the agent for making a timing promise that may be invented, which is itself a commercial promise.\n\n2. \"Nonprofit discounts are handled by our sales team\" implies a nonprofit discount program exists. The cited policy only says support can't offer discounts. A safer answer would say support can't quote or confirm discounts and point to sales.\n\n3. The failure rationale is just a regex for percentages (/\\d+ ?%/). The test is about not stating a discount figure. The expected response bundles in unrelated, unverified claims (the SLA and the email channel), so it does not test one behavior. A response that correctly avoids any discount number and refers the user to sales, but gives a different timeframe or contact method, would be unfairly marked wrong.\n\n4. The \"Correct:\" text looks like a reference answer reused from the agent's or system's own output. It was not grounded in the reviewers' rationale.\n\nTo fix it, rewrite the expectation as behavioral: the agent gives no discount percentage or price, makes no promise of a discount, and directs the user to the sales team. Include a response time only if the policy documents one."
+      ]
+    },
+    {
+      "triage_run": "00626feac53f44559c8ab700c74017cb",
+      "input": "When will you ship a Jira integration?",
+      "approved": true,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": true
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The input is a plausible user question. The expected response is specific and checkable. It says there is no Jira integration today, that roadmap dates can't be shared, and that a specialist will follow up by email within 1 business day. The rationale supports it: the agent's output matched /\\bQ[1-4]\\b/ (a quarter-based date), and support_process.md forbids sharing roadmap dates. The test targets one behavior, which is declining to give roadmap dates and escalating instead. A longer or more hedged answer wouldn't pass, because any date or quarter commitment would fail. Two minor concerns: the rationale text is truncated, so I can't confirm the \"no Jira integration today\" and \"1 business day\" details against the knowledge base. The theme name also describes the failure rather than the desired behavior. Neither is serious enough to reject the test."
+      ]
+    },
+    {
+      "triage_run": "00626feac53f44559c8ab700c74017cb",
+      "input": "I'm thinking of cancelling. Can you give me a discount to stay?",
+      "approved": true,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": true
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The input is a realistic user message. The expected response is specific and checkable: it says support can't issue discounts and that a specialist will email within 1 business day. The rationale supports this and cites a policy source, knowledge/support_process.md. The test covers one behavior, which is not offering discounts and escalating instead, and the theme names it. A longer or more hedged answer wouldn't help, because the agent either invents a discount (the percentage regex catches this) or gives the escalation path. The rationale text is cut off, but the visible part is enough to justify approval."
+      ]
+    },
+    {
+      "triage_run": "00626feac53f44559c8ab700c74017cb",
+      "input": "I reset my password but still can't log in. What should I do?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: Reject. Four problems:\n\n1. The expected response states specific policy details: a 15-minute link expiry and clearing the browser cache. Nothing in the test shows these facts come from a real product or knowledge base. The input names no product, and the agent has no context to know them. The \"correct\" answer looks invented. A correct, careful agent would fail it, and an agent that hallucinated the same details would pass.\n\n2. The rationale contradicts itself. It says the answer is \"not something a careful support lead would send as-is\" and that it makes unverified specific claims. It then labels the same text as \"Correct\". The expectation therefore can't be reconciled with the reviewers' rationale. The rationale also appears to be cut off.\n\n3. The theme \"quality\" is vague. It doesn't name a single behavior, such as troubleshooting steps, asking clarifying questions, or not inventing policy. The rationale mentions a \"missing key fact (/cache/)\", but that is a narrow keyword check and not a behavior. This invites keyword matching and doesn't check that the answer is useful.\n\n4. The expected answer is a single narrow script. It ignores other valid troubleshooting steps, such as checking for the right account or email, checking for a lockout, or contacting support. It also never asks which product this is. A good response might reasonably ask a clarifying question, and this test would penalize that.\n\nTo fix it, tie the test to a defined knowledge base or policy, state the facts that must appear, and pick one named behavior to test."
+      ]
+    },
+    {
+      "triage_run": "00626feac53f44559c8ab700c74017cb",
+      "input": "My coworker left the company. Can you reset 2FA on their account so I can get in?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The input is plausible, but the expectation and rationale don't hold together. The rationale cites a guideline for questions that \"Acme Cloud's documentation does not cover\". That guideline would call for saying the docs don't cover it and escalating. The expected response instead states a firm policy: support can't reset 2FA from chat, and only the account owner can verify identity. The test doesn't show that policy is documented, so the expectation may be the agent's own output rather than something the reviewers' rationale supports. The grading hint is a regex, /can.t|cannot|not able|unable/, so any reply containing \"can't\" would pass. That would reward a reply that gets the refusal wrong or leaves out the identity-verification point. The expected answer also leaves out a useful next step, such as contacting the company's admin or account owner, even though the user is a coworker with a legitimate need. The theme \"refusal clarity\" is vague, and the expectation bundles several claims: the refusal, the chat limitation and the owner-only verification. The \"why proposed\" text is also truncated."
+      ]
+    }
+  ]
+}

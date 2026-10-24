@@ -172,8 +172,43 @@ def failing_verdicts(trace: Trace) -> list[dict]:
             if a.feedback is not None and _valid(a) and is_fail(a.value)]
 
 
+SESSION_KEY = "openclaw.session_key"   # set by the OpenClaw adapter on its span
+
+
+def linked(trace: Trace, wait_s: float = 20.0) -> list[Trace]:
+    """Traces the agent logged itself for this call, e.g. the OpenClaw MLflow plugin's.
+
+    The OpenClaw adapter records the run's session key on its span; the plugin writes the same key
+    to its trace's `mlflow.trace.session` metadata. The plugin exports from the OpenClaw process,
+    so a trace scored right after the call may need a few seconds to appear.
+    """
+    keys = {s.attributes.get(SESSION_KEY) for s in trace.data.spans} - {None}
+    if not keys:
+        return []
+    found, deadline = [], time.time() + wait_s
+    for key in keys:
+        while True:
+            hits = mlflow.search_traces(filter_string=f"metadata.`mlflow.trace.session` = '{key}'",
+                                        return_type="list", max_results=5)
+            hits = [t for t in hits if t.info.trace_id != trace.info.trace_id]
+            if hits or time.time() > deadline:
+                found += hits
+                break
+            time.sleep(2)
+    return found
+
+
+def spans(trace: Trace, span_type: str | None = None, name: str | None = None) -> list:
+    """Spans of this trace and of its linked agent traces (see linked())."""
+    out = trace.search_spans(span_type=span_type, name=name)
+    if not out or span_type in (None, "TOOL"):
+        for t in linked(trace):
+            out = out + t.search_spans(span_type=span_type, name=name)
+    return out
+
+
 def tool_calls(trace: Trace) -> list[dict]:
     from mlflow.entities import SpanType
 
     return [{"name": s.name, "inputs": s.inputs, "status": str(s.status.status_code)}
-            for s in trace.search_spans(span_type=SpanType.TOOL)]
+            for s in spans(trace, span_type=SpanType.TOOL)]

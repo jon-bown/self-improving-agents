@@ -56,6 +56,23 @@ def _first_sentence(text: str) -> str:
     return re.split(r"(?<=[.!?])\s+|\n", text.strip(), maxsplit=1)[0]
 
 
+def failed_call(span) -> bool:
+    """A tool call that errored, including tools that report errors in their output.
+
+    OpenClaw's `read` returns {"error": ...} for a directory and a result with details.kind
+    "not_found" for a missing file, with an OK span status.
+    """
+    if span.status.status_code == SpanStatusCode.ERROR:
+        return True
+    out = span.outputs
+    if not isinstance(out, dict):
+        return False
+    if out.get("error"):
+        return True
+    details = out.get("result", {}).get("details") if isinstance(out.get("result"), dict) else None
+    return isinstance(details, dict) and str(details.get("kind") or details.get("status")).lower() in ("not_found", "error")
+
+
 def make_check(spec: dict):
     """A code scorer from a criteria.yaml `checks:` entry.
 
@@ -63,19 +80,28 @@ def make_check(spec: dict):
         first_sentence_not_match      regexes the opening sentence must avoid
         max_words                     word limit
         requires_tool                 a TOOL span with this name must exist and succeed
+          tool_input_match            ...and one of them must have inputs matching this regex
+
+    Tool spans come from the trace and from any trace the agent logged itself for the same call
+    (the OpenClaw MLflow plugin's, found by session key; see traces.linked).
     """
     name = spec["name"]
     why = spec.get("rationale", "")
 
     if "requires_tool" in spec:
-        tool = spec["requires_tool"]
+        tool, input_match = spec["requires_tool"], spec.get("tool_input_match")
 
         @scorer(name=name)
         def tool_check(trace) -> Feedback:
-            calls = [s for s in trace.search_spans(span_type=SpanType.TOOL) if tool in ("*", s.name)]
+            from selfimprove import traces
+
+            calls = [s for s in traces.spans(trace, span_type=SpanType.TOOL) if tool in ("*", s.name)]
+            if input_match:
+                calls = [s for s in calls if re.search(input_match, json.dumps(s.inputs, default=str), re.I)]
             if not calls:
-                return Feedback(value=False, rationale=f"The agent answered without calling {tool}. {why}".strip())
-            if all(c.status.status_code == SpanStatusCode.ERROR for c in calls):
+                target = f"{tool} on /{input_match}/" if input_match else tool
+                return Feedback(value=False, rationale=f"The agent answered without calling {target}. {why}".strip())
+            if all(failed_call(c) for c in calls):
                 return Feedback(value=False, rationale=f"Every {tool} call failed. {why}".strip())
             return Feedback(value=True, rationale=f"Called {', '.join(sorted({c.name for c in calls}))}.")
 
@@ -107,12 +133,14 @@ def make_check(spec: dict):
     return check
 
 
-@scorer
+@scorer(name="has_key_facts")
 def key_facts(outputs, expectations) -> Feedback:
     """Reference check: every regex in the expectation `key_facts` appears in the response.
 
     Not `expected_facts`: MLflow's Correctness judge reads that name too, and refuses rows that
-    carry it alongside `expected_response`.
+    carry it alongside `expected_response`. And the scorer is not named `key_facts`: evaluate()'s
+    result_df gives a feedback the same name as an expectation a NaN value, so the gate would
+    silently skip every row that has facts to check. (criteria.yaml still lists it as key_facts.)
     """
     facts = (expectations or {}).get("key_facts") or []
     missing = [f for f in facts if not re.search(f, str(outputs), re.IGNORECASE)]
@@ -220,6 +248,7 @@ def make_grounded(spec: dict):
         - name: grounded_in_policy
           tool: lookup_policy          # the TOOL span to check
           requires_input: topic        # it must have been called with this argument
+          tool_input_match: knowledge/ # optional: only calls whose inputs match this regex
           instructions: "Does {{ outputs }} make only claims that the policy in {{ inputs }} supports?"
 
     The span checks cost nothing and catch a missing, failed, or empty lookup before any model
@@ -232,20 +261,28 @@ def make_grounded(spec: dict):
     judge = cascade(fast_judge(name, spec.get("fast_instructions", instructions)), text) \
         if (text is not None and config.settings.has_fast_judge) else text
 
+    input_match = spec.get("tool_input_match")
+
     @scorer(name=name)
     def grounded(trace) -> Feedback:
-        calls = trace.search_spans(span_type=SpanType.TOOL, name=tool)
+        from selfimprove import traces
+
+        calls = traces.spans(trace, span_type=SpanType.TOOL, name=tool)
+        if input_match:
+            calls = [c for c in calls if re.search(input_match, json.dumps(c.inputs, default=str), re.I)]
         if not calls:
             return Feedback(value=False, rationale=f"The agent answered without calling {tool}.")
-        call = calls[-1]
-        if call.status.status_code == SpanStatusCode.ERROR:
+        ok = [c for c in calls if not failed_call(c)]
+        if not ok:
             return Feedback(value=False, rationale=f"{tool} failed, so the answer has nothing behind it.")
-        if (needs and not (call.inputs or {}).get(needs)) or not call.outputs:
+        ok = [c for c in ok if c.outputs and (not needs or (c.inputs or {}).get(needs))]
+        if not ok:
             return Feedback(value=False, rationale=f"{tool} was called without {needs or 'input'} or returned nothing.")
         if judge is None:
             return Feedback(value=True, rationale=f"{tool} returned content (no judge model: span checks only).")
-        request = trace.data.request
-        return judge(inputs={"question": request, tool: call.outputs}, outputs=trace.data.response)
+        # Every successful call: an agent that reads several files may answer from any of them.
+        looked_up = "\n\n".join(str(c.outputs) for c in ok)
+        return judge(inputs={"question": trace.data.request, tool: looked_up}, outputs=trace.data.response)
 
     return grounded
 

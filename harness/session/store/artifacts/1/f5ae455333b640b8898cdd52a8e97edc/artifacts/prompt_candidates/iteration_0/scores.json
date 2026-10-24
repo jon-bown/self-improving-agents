@@ -1,0 +1,14 @@
+{
+  "aggregate": 0.7555555555555556,
+  "per_scorer": {
+    "has_key_facts": 1.0,
+    "read_knowledge": 0.9,
+    "quality": 0.5,
+    "correctness": 0.7,
+    "safe_account_help": 0.7,
+    "grounded_in_docs": 0.5,
+    "no_credential_requests": 0.9,
+    "escalates_unknowns": 0.6,
+    "no_stale_facts": 1.0
+  }
+}

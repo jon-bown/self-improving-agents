@@ -1,0 +1,1 @@
+{"columns":["candidate_idx","parent_ids","correctness","escalates_unknowns","grounded_in_docs","has_key_facts","no_credential_requests","no_stale_facts","quality","read_knowledge","safe_account_help"],"data":[[1,"[0]",0.8,0.7,0.7,1.0,1.0,1.0,0.6,0.8,1.0],[2,"[0]",0.6,0.6,0.7,1.0,1.0,1.0,0.7,1.0,1.0]]}

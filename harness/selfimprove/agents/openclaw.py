@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import shutil
 import subprocess
+import threading
+import time
 import uuid
 from pathlib import Path
 
@@ -29,6 +32,11 @@ from mlflow.entities import SpanType
 from selfimprove import config, models
 
 PLUGIN_ID = "mlflow-openclaw"
+# One profile runs one `openclaw agent` at a time: a run holds the profile's state database until
+# it exits, and a second one fails with one of these. Calls from this process queue on _PROFILE
+# (evaluate() calls the agent from threads); a run from another process is waited out.
+BUSY = ("undergoing offline maintenance", "Another OpenClaw process is using your data")
+_PROFILE = threading.Lock()
 # harness/selfimprove/agents/openclaw.py -> <repo>/connectors/openclaw-mlflow
 PLUGIN_DIR = Path(__file__).resolve().parents[3] / "connectors" / "openclaw-mlflow"
 
@@ -141,8 +149,17 @@ def call_openclaw(question, instructions, workspace):
         span.set_inputs({"message": question, "workspace": str(workspace)})
         # The MLflow plugin's trace for this run has the same mlflow.trace.session.
         span.set_attribute("openclaw.session_key", f"agent:main:explicit:{session_id}")
-        proc = subprocess.run(cmd, env=env(workspace), capture_output=True, text=True,
-                              timeout=config.settings.agent_timeout)
+        with _PROFILE:
+            waited, deadline = 0, time.time() + config.settings.agent_timeout
+            while True:
+                proc = subprocess.run(cmd, env=env(workspace), capture_output=True, text=True,
+                                      timeout=config.settings.agent_timeout)
+                busy = proc.returncode != 0 and any(b in proc.stderr + proc.stdout for b in BUSY)
+                if not busy or time.time() > deadline:
+                    break
+                waited += 1
+                time.sleep(random.uniform(2, 6))
+        span.set_attribute("openclaw.busy_retries", waited)
         if proc.returncode != 0:
             raise RuntimeError(f"openclaw exited {proc.returncode}: {proc.stderr[-1500:]}")
         payload = json.loads(proc.stdout)

@@ -215,6 +215,8 @@ tests/             offline loop (CI) + the regression suite (SI_REGRESSION=1)
   only (`gate.scorer_failures`).
 * The regex answer key is the expectation `key_facts`, not `expected_facts`: MLflow's
   Correctness judge reads `expected_facts` and refuses rows that also have `expected_response`.
+  The scorer that checks it is named `has_key_facts`: in `evaluate()`'s `result_df`, a feedback
+  with the same name as an expectation comes back as NaN, so the gate would skip those rows.
 * litellm 1.106.1 imports `mcp` without depending on it, so the harness stays below 1.106. Some
   litellm versions can deadlock in a finalizer at interpreter exit; the CLI flushes MLflow's
   trace queue and exits immediately, so scheduled jobs never hang after finishing.

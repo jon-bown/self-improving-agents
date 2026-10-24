@@ -8,7 +8,7 @@ An OpenClaw plugin that logs every agent run to MLflow as a trace: a root `AGENT
 </p>
 
 This is the official `@mlflow/mlflow-openclaw` integration from MLflow's repository
-(`libs/typescript/integrations/openclaw` at commit `568cd81`, 2026-10-21). It carries five fixes
+(`libs/typescript/integrations/openclaw` at commit `568cd81`, 2026-10-21). It carries seven fixes
 that make it work on OpenClaw 2026.10 (listed [below](#what-is-fixed-here)). Plugin id, config
 keys and CLI stay as they are upstream, so it can be swapped for the npm release once that has
 the fixes.
@@ -269,6 +269,16 @@ with a live agent run.
    written to the trace's metadata, using the shared SDK's trace manager (`updateCurrentTrace()`
    needs an active span context, which hook callbacks don't have). (`src/service.ts`)
 
+6. **Two minutes per run.** OpenClaw copies a plugin's whole folder each time it loads it,
+   several times per process, and `@mlflow/core`'s dependencies are about 175 MB of
+   `node_modules`. Every `openclaw agent` run took about 150 s instead of 20 s, and the gateway
+   started slowly. `npm run build` now bundles the plugin into one `dist/index.js` (esbuild,
+   `scripts/bundle.mjs`) and the package declares no runtime dependencies, so an install is
+   one 20 MB file. (`package.json`)
+7. **Traces lost on a fast exit.** The `agent_end` handler flushed the trace in the background
+   and returned nothing, so a one-shot `openclaw agent` run could exit before the export
+   finished. It now returns the flush, which OpenClaw awaits (up to 30 s). (`src/service.ts`)
+
 Unit tests cover fixes 2 to 5 (`tests/index.test.ts`).
 
 ## Develop
@@ -276,5 +286,5 @@ Unit tests cover fixes 2 to 5 (`tests/index.test.ts`).
 ```bash
 npm ci
 npm test          # jest, no OpenClaw needed
-npm run build     # tsc -> dist/
+npm run build     # tsc -> dist/, then bundle dist/index.js
 ```

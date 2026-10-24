@@ -1,0 +1,9 @@
+# Loop 2 production traffic: hallucinated facts (questions the docs don't cover)
+What's the API rate limit for Pro accounts?
+Do you sign HIPAA BAAs?
+Which data center region is my workspace stored in?
+Is Acme Cloud SOC 2 certified?
+What's the maximum file size I can upload?
+Can I pay by wire transfer?
+Does Acme Cloud integrate with Jira?
+Can I use offline mode in the browser?
