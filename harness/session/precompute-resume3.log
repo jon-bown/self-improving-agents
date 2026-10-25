@@ -1,7 +1,20 @@
 -- a person raises SI_MAX_PROMPT_GROWTH to 2.5 and re-runs the gate on 7
 2026/10/22 07:02:28 INFO mlflow.models.evaluation.utils.trace: Auto tracing is temporarily enabled during the model evaluation for computing some metrics and debugging. To disable tracing, call `mlflow.autolog(disable=True)`.
 2026/10/22 07:02:28 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
-Evaluating:   0%|          | 0/10 [Elapsed: 00:00, Remaining: ?]Evaluating:  10%|█         | 1/10 [Elapsed: 00:36, Remaining: 05:26]Evaluating:  20%|██        | 2/10 [Elapsed: 01:02, Remaining: 04:08]Evaluating:  30%|███       | 3/10 [Elapsed: 01:32, Remaining: 03:35]Evaluating:  40%|████      | 4/10 [Elapsed: 02:01, Remaining: 03:02]Evaluating:  50%|█████     | 5/10 [Elapsed: 02:27, Remaining: 02:27]Evaluating:  60%|██████    | 6/10 [Elapsed: 02:56, Remaining: 01:57]Evaluating:  70%|███████   | 7/10 [Elapsed: 03:26, Remaining: 01:28]Evaluating:  80%|████████  | 8/10 [Elapsed: 03:54, Remaining: 00:58]Evaluating:  90%|█████████ | 9/10 [Elapsed: 04:22, Remaining: 00:29]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+
+Evaluating:   0%|          | 0/10 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  10%|█         | 1/10 [Elapsed: 00:36, Remaining: 05:26]
+Evaluating:  20%|██        | 2/10 [Elapsed: 01:02, Remaining: 04:08]
+Evaluating:  30%|███       | 3/10 [Elapsed: 01:32, Remaining: 03:35]
+Evaluating:  40%|████      | 4/10 [Elapsed: 02:01, Remaining: 03:02]
+Evaluating:  50%|█████     | 5/10 [Elapsed: 02:27, Remaining: 02:27]
+Evaluating:  60%|██████    | 6/10 [Elapsed: 02:56, Remaining: 01:57]
+Evaluating:  70%|███████   | 7/10 [Elapsed: 03:26, Remaining: 01:28]
+Evaluating:  80%|████████  | 8/10 [Elapsed: 03:54, Remaining: 00:58]
+Evaluating:  90%|█████████ | 9/10 [Elapsed: 04:22, Remaining: 00:29]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
 
 ✨ Evaluation completed.
 
@@ -11,7 +24,20 @@ Metrics and evaluation results are logged to the MLflow run:
 View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=5fae5b1c89f64d58a71013a679b2e5b6[0m
 
 2026/10/22 07:08:01 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
-Evaluating:   0%|          | 0/10 [Elapsed: 00:00, Remaining: ?]Evaluating:  10%|█         | 1/10 [Elapsed: 00:32, Remaining: 04:56]Evaluating:  20%|██        | 2/10 [Elapsed: 01:09, Remaining: 04:37]Evaluating:  30%|███       | 3/10 [Elapsed: 01:31, Remaining: 03:32]Evaluating:  40%|████      | 4/10 [Elapsed: 02:00, Remaining: 03:01]Evaluating:  50%|█████     | 5/10 [Elapsed: 02:29, Remaining: 02:29]Evaluating:  60%|██████    | 6/10 [Elapsed: 02:58, Remaining: 01:58]Evaluating:  70%|███████   | 7/10 [Elapsed: 03:29, Remaining: 01:29]Evaluating:  80%|████████  | 8/10 [Elapsed: 03:55, Remaining: 00:58]Evaluating:  90%|█████████ | 9/10 [Elapsed: 04:28, Remaining: 00:29]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+
+Evaluating:   0%|          | 0/10 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  10%|█         | 1/10 [Elapsed: 00:32, Remaining: 04:56]
+Evaluating:  20%|██        | 2/10 [Elapsed: 01:09, Remaining: 04:37]
+Evaluating:  30%|███       | 3/10 [Elapsed: 01:31, Remaining: 03:32]
+Evaluating:  40%|████      | 4/10 [Elapsed: 02:00, Remaining: 03:01]
+Evaluating:  50%|█████     | 5/10 [Elapsed: 02:29, Remaining: 02:29]
+Evaluating:  60%|██████    | 6/10 [Elapsed: 02:58, Remaining: 01:58]
+Evaluating:  70%|███████   | 7/10 [Elapsed: 03:29, Remaining: 01:29]
+Evaluating:  80%|████████  | 8/10 [Elapsed: 03:55, Remaining: 00:58]
+Evaluating:  90%|█████████ | 9/10 [Elapsed: 04:28, Remaining: 00:29]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+Evaluating: 100%|██████████| 10/10 [Elapsed: 04:54, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
 
 ✨ Evaluation completed.
 
@@ -21,7 +47,22 @@ Metrics and evaluation results are logged to the MLflow run:
 View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=d38a0bc3a527420c94fbe51b060e81d6[0m
 
 2026/10/22 07:13:26 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
-Evaluating:   0%|          | 0/12 [Elapsed: 00:00, Remaining: ?]Evaluating:   8%|▊         | 1/12 [Elapsed: 00:33, Remaining: 06:10]Evaluating:  17%|█▋        | 2/12 [Elapsed: 01:01, Remaining: 05:06]Evaluating:  25%|██▌       | 3/12 [Elapsed: 01:27, Remaining: 04:22]Evaluating:  33%|███▎      | 4/12 [Elapsed: 01:55, Remaining: 03:50]Evaluating:  42%|████▏     | 5/12 [Elapsed: 02:29, Remaining: 03:28]Evaluating:  50%|█████     | 6/12 [Elapsed: 02:55, Remaining: 02:55]Evaluating:  58%|█████▊    | 7/12 [Elapsed: 03:23, Remaining: 02:25]Evaluating:  67%|██████▋   | 8/12 [Elapsed: 03:53, Remaining: 01:56]Evaluating:  75%|███████▌  | 9/12 [Elapsed: 04:22, Remaining: 01:27]Evaluating:  83%|████████▎ | 10/12 [Elapsed: 04:53, Remaining: 00:58]Evaluating:  92%|█████████▏| 11/12 [Elapsed: 05:20, Remaining: 00:29]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+
+Evaluating:   0%|          | 0/12 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   8%|▊         | 1/12 [Elapsed: 00:33, Remaining: 06:10]
+Evaluating:  17%|█▋        | 2/12 [Elapsed: 01:01, Remaining: 05:06]
+Evaluating:  25%|██▌       | 3/12 [Elapsed: 01:27, Remaining: 04:22]
+Evaluating:  33%|███▎      | 4/12 [Elapsed: 01:55, Remaining: 03:50]
+Evaluating:  42%|████▏     | 5/12 [Elapsed: 02:29, Remaining: 03:28]
+Evaluating:  50%|█████     | 6/12 [Elapsed: 02:55, Remaining: 02:55]
+Evaluating:  58%|█████▊    | 7/12 [Elapsed: 03:23, Remaining: 02:25]
+Evaluating:  67%|██████▋   | 8/12 [Elapsed: 03:53, Remaining: 01:56]
+Evaluating:  75%|███████▌  | 9/12 [Elapsed: 04:22, Remaining: 01:27]
+Evaluating:  83%|████████▎ | 10/12 [Elapsed: 04:53, Remaining: 00:58]
+Evaluating:  92%|█████████▏| 11/12 [Elapsed: 05:20, Remaining: 00:29]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:44, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
 
 ✨ Evaluation completed.
 
@@ -31,7 +72,22 @@ Metrics and evaluation results are logged to the MLflow run:
 View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=14c697a707dd419984cf6600d5d14b69[0m
 
 2026/10/22 07:19:41 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
-Evaluating:   0%|          | 0/12 [Elapsed: 00:00, Remaining: ?]Evaluating:   8%|▊         | 1/12 [Elapsed: 00:33, Remaining: 06:13]Evaluating:  17%|█▋        | 2/12 [Elapsed: 01:08, Remaining: 05:42]Evaluating:  25%|██▌       | 3/12 [Elapsed: 01:28, Remaining: 04:25]Evaluating:  33%|███▎      | 4/12 [Elapsed: 01:56, Remaining: 03:52]Evaluating:  42%|████▏     | 5/12 [Elapsed: 02:25, Remaining: 03:23]Evaluating:  50%|█████     | 6/12 [Elapsed: 02:55, Remaining: 02:55]Evaluating:  58%|█████▊    | 7/12 [Elapsed: 03:23, Remaining: 02:25]Evaluating:  67%|██████▋   | 8/12 [Elapsed: 03:53, Remaining: 01:56]Evaluating:  75%|███████▌  | 9/12 [Elapsed: 04:18, Remaining: 01:26]Evaluating:  83%|████████▎ | 10/12 [Elapsed: 04:48, Remaining: 00:57]Evaluating:  92%|█████████▏| 11/12 [Elapsed: 05:14, Remaining: 00:28]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+
+Evaluating:   0%|          | 0/12 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   8%|▊         | 1/12 [Elapsed: 00:33, Remaining: 06:13]
+Evaluating:  17%|█▋        | 2/12 [Elapsed: 01:08, Remaining: 05:42]
+Evaluating:  25%|██▌       | 3/12 [Elapsed: 01:28, Remaining: 04:25]
+Evaluating:  33%|███▎      | 4/12 [Elapsed: 01:56, Remaining: 03:52]
+Evaluating:  42%|████▏     | 5/12 [Elapsed: 02:25, Remaining: 03:23]
+Evaluating:  50%|█████     | 6/12 [Elapsed: 02:55, Remaining: 02:55]
+Evaluating:  58%|█████▊    | 7/12 [Elapsed: 03:23, Remaining: 02:25]
+Evaluating:  67%|██████▋   | 8/12 [Elapsed: 03:53, Remaining: 01:56]
+Evaluating:  75%|███████▌  | 9/12 [Elapsed: 04:18, Remaining: 01:26]
+Evaluating:  83%|████████▎ | 10/12 [Elapsed: 04:48, Remaining: 00:57]
+Evaluating:  92%|█████████▏| 11/12 [Elapsed: 05:14, Remaining: 00:28]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
+Evaluating: 100%|██████████| 12/12 [Elapsed: 05:41, Remaining: 00:00] [predict_fn: 97%, scorers: 3%]
 
 ✨ Evaluation completed.
 
@@ -56,4 +112,4 @@ OVERALL                                   80%                86%                
 [gate] rejected: gate FAIL: v7 vs v5 -- holdout: must-pass 'no_credential_requests' at 92%
 🏃 View run gate 2026-10-22 07:02:16 at: http://127.0.0.1:19560/#/experiments/1/runs/ff32d3eaf0d44d26a59a526b0d509c7c
 🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
-== loop 3 saved: /Users/jon/Documents/Claude/ODSC West 2026/self-improving-agent/harness/session/store/results/loop3.json
+== loop 3 saved: harness/session/store/results/loop3.json

@@ -30,7 +30,7 @@ make session-server
 
 Leave it running, then open the notebooks with `make session-notebooks`, or the
 MLflow UI at http://127.0.0.1:19560: `Traces` (filter `tags.session_loop = '1'`), `Prompts`
-(`acme-agents-md`, v1 to v5), `Datasets`, and the `gate` and `cycle` runs.
+(`acme-agents-md`, v1 to v12, including the rejected candidates), `Datasets`, and the `gate` and `cycle` runs.
 
 The notebooks only read the store, so their cells run in seconds and in any order within a
 notebook.

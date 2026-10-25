@@ -147,7 +147,7 @@ def compare(candidate, baseline="production", train: list[dict] | None = None,
 def scorer_failures(result, scorers) -> list[str]:
     """Like EvaluationResult.reason, but only for the given scorers.
 
-    In MLflow 3.16.1 `result.passed` also treats expectation columns (expected_response/value)
+    In MLflow 3.16 through 3.17.2 `result.passed` also treats expectation columns (expected_response/value)
     as assertions, so any row with an expected response "fails". This checks scorer columns only.
     """
     out = []

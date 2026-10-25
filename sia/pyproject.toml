@@ -5,7 +5,7 @@ description = "Build a self-improving OpenClaw agent with MLflow: signal -> stor
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "mlflow[genai]>=3.16.1",
+    "mlflow[genai]>=3.17.2",
     # one client for every provider (direct runtime + trace analyst). 1.106.1 imports `mcp`
     # without depending on it, which breaks `import litellm`.
     "litellm>=1.75,<1.106",

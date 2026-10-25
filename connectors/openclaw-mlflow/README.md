@@ -1,7 +1,7 @@
 # MLflow tracing for OpenClaw
 
 An OpenClaw plugin that logs every agent run to MLflow as a trace: a root `AGENT` span with
-`LLM`, `TOOL` and sub-agent spans under it, plus token usage, cost, model and session.
+`LLM`, `TOOL` and sub-agent spans under it, plus token usage, model and session.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/mlflow/mlflow/master/libs/typescript/integrations/openclaw/trace-screenshot.png" alt="An OpenClaw trace in the MLflow UI" width="700" />
@@ -139,9 +139,9 @@ openclaw agent --agent main -m "Say hello in five words"
 ```
 
 Open the MLflow UI (http://localhost:5000), pick the experiment, and open **Traces**. Each run
-is one trace: an `AGENT` root span with an `LLM` span per model call and a `TOOL` span per tool
-call, plus token usage, cost, the model and the session. Runs with `--local` are traced too,
-without a gateway.
+is one trace: an `AGENT` root span, one `LLM` span for the run's model calls, and a `TOOL` span
+per tool call, plus token usage, the model and the session. OpenClaw reports tokens but not
+cost, so MLflow's cost charts stay empty. Runs with `--local` are traced too, without a gateway.
 
 Two things you'll see that are normal:
 

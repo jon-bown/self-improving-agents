@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "The answer says the connector exports over HTTP, so MLFLOW_TRACKING_URI must point at a running mlflow server instead of sqlite:///mlflow.db.",
+      "passed": true,
+      "evidence": "'The main cause is MLFLOW_TRACKING_URI=sqlite:///mlflow.db... You need a running mlflow server.'"
+    },
+    {
+      "text": "The answer mentions the hooks.allowConversationAccess grant (or that install.sh / openclaw mlflow configure sets it) as a cause of missing traces on OpenClaw 2026.10.",
+      "passed": true,
+      "evidence": "Table row: hooks.allowConversationAccess not true; 'openclaw mlflow configure sets it'."
+    },
+    {
+      "text": "The answer configures the harness with SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1.",
+      "passed": true,
+      "evidence": ".env sets SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1."
+    },
+    {
+      "text": "The answer proposes a criteria check on the tool spans (requires_tool with tool_input_match, or a grounded judge) to verify the agent read the docs.",
+      "passed": true,
+      "evidence": "check read_the_docs: requires_tool: read, tool_input_match: 'docs/', must_pass."
+    },
+    {
+      "text": "The answer does not claim that the connector records cost, or that it writes one LLM span per model call.",
+      "passed": false,
+      "evidence": "Claims 'an llm_call span for every model call' and 'Token usage and cost are attached'; neither holds for OpenClaw runs."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  }
+}

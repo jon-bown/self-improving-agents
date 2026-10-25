@@ -19,7 +19,7 @@ traces ─┤ human labels           ├─────▶ dataset       ├─�
 | **workflows** | the scheduled jobs from Part 3: score, triage, approve, align, improve, gate, monitor, cycle | `selfimprove/workflows/`, the `selfimprove` CLI, `.github/workflows/selfimprove-*.yml` |
 | **notebooks** | the manual steps, one idea at a time, with the raw MLflow calls in the cells | `notebooks/` |
 | **config** | bring your own agent, models, criteria and guardrails | `.env` (from `.env.example`), `examples/criteria.yaml` |
-| **skill** | an agent skill that applies the framework with MLflow and the agent of your choice | `skills/self-improving-agent/` |
+| **skill** | an agent skill that applies the framework with MLflow and the agent of your choice | [`../skills/`](../skills/README.md), at the repo root |
 
 ## Quickstart
 
@@ -174,20 +174,8 @@ few dollars, most of it in notebooks 03 and 05.
 
 ## The skill
 
-`skills/self-improving-agent/` is an [agent skill](https://agentskills.io) (`SKILL.md` + references)
-that implements the framework with MLflow and the agent of your choice: it finds the first gap
-(tracing, update target, human signal, verifier), uses the harness when it is installed or plain
-MLflow when it is not, moves up one level of automation at a time, and holds to the rules (the
-proposer never approves, the holdout stays hidden, judge verdicts never become expectations,
-promotion is an alias move with a record). It also covers the case where the agent is asked to
-improve its own instructions. Install it for Claude Code with
-
-```bash
-mkdir -p ~/.claude/skills && cp -r skills/self-improving-agent ~/.claude/skills/
-```
-
-or copy the folder into any agent that reads skills (OpenClaw, Hermes, Codex, Gemini CLI). It
-pairs with MLflow's own skills (`mlflow agent setup`).
+The `self-improving-agent` skill now lives at the repo root, in [`skills/`](../skills/README.md):
+it teaches a coding agent to apply this harness, its workflows and the OpenClaw connector.
 
 ## Layout
 
@@ -204,7 +192,6 @@ selfimprove/
   cli.py           `selfimprove <command>`
 examples/          the support agent, its instructions, criteria, golden cases, reviewers, Hermes
 notebooks/         the walkthrough
-skills/            the self-improving-agent skill
 tests/             offline loop (CI) + the regression suite (SI_REGRESSION=1)
 ```
 

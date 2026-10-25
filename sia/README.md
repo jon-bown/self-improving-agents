@@ -200,13 +200,14 @@ Local state stays in this folder and out of git: `mlflow.db` and `mlartifacts/` 
 `make server`), `.openclaw-state/` (the isolated OpenClaw profile), `.workspaces/`, and
 `proposals/`. `make reset` deletes it.
 
-## Notes on MLflow 3.16.1
+## Notes on MLflow
 
-We hit three issues while building this. The workarounds are in the code:
-* `EvaluationResult.passed` treats expectation columns (such as `expected_response/value`) as assertions, so
+The repo runs on MLflow 3.17.2. We hit three issues while building it, starting on 3.16.1, and the
+workarounds are in the code:
+* `EvaluationResult.passed` (still in 3.17.2) treats expectation columns (such as `expected_response/value`) as assertions, so
   `assert result.passed` fails on any dataset row that has an expected response. `sia.gate.scorer_failures()`
   checks only the scorers' own columns.
-* Usage telemetry can deadlock on a lazy import when `evaluate()` runs scorers in worker threads. `import sia`
+* Usage telemetry could deadlock on a lazy import when `evaluate()` runs scorers in worker threads. `import sia`
   sets `MLFLOW_DISABLE_TELEMETRY=true`.
 * Registering the MLflow pytest plugin in a root `conftest.py` hung subprocess-based tests. The agent suite
   enables it with `pytest -p mlflow.pytest.plugin tests/agent`.

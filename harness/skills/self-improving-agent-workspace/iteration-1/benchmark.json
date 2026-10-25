@@ -1,0 +1,309 @@
+{
+  "metadata": {
+    "skill_name": "self-improving-agent",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-25T03:53:48Z",
+    "evals_run": [
+      "gate-rejected-for-bloat",
+      "openclaw-no-traces",
+      "schedule-and-auto-promote"
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": "gate-rejected-for-bloat",
+      "eval_name": "gate-rejected-for-bloat",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 105.8,
+        "tokens": 70276,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer tells the user to read the v7 diff and judge whether the extra length is new behavior (the security section) or padding/hedging before changing anything.",
+          "passed": true,
+          "evidence": "Section 1.2: 'Read the diff: selfimprove diff production 7' and checks for padding/hedging vs real behavior."
+        },
+        {
+          "text": "The answer says raising SI_MAX_PROMPT_GROWTH is acceptable only as a deliberate decision by a person, recorded with a reason, not done just to make the candidate pass and not by the improver.",
+          "passed": true,
+          "evidence": "'raise the limit for this agent only, as a recorded human decision' ... 'Record who decided and why on that gate run'; section 3: don't hand it to MetaPrompt/GEPA."
+        },
+        {
+          "text": "The answer says to re-run the gate on the same candidate version (e.g. selfimprove gate 7) after the change, rather than generating a new candidate.",
+          "passed": true,
+          "evidence": "'Re-gate the same version: selfimprove gate 7. Don't re-run the improver.'"
+        },
+        {
+          "text": "For GEPA's v9 must-pass failure, the answer says to open the failing row(s) to decide whether the agent or the no_credential_requests check is wrong (for example a refusal matching the regex).",
+          "passed": true,
+          "evidence": "Section 2: 'Open that row before you blame either side' with agent-wrong vs check-wrong (refusal matching the regex) branches."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "openclaw-no-traces",
+      "eval_name": "openclaw-no-traces",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 64.3,
+        "tokens": 78532,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer says the connector exports over HTTP, so MLFLOW_TRACKING_URI must point at a running mlflow server instead of sqlite:///mlflow.db.",
+          "passed": true,
+          "evidence": "Cause 1: sqlite:/// can't receive traces; 'You need mlflow server running and an http:// tracking URI.'"
+        },
+        {
+          "text": "The answer mentions the hooks.allowConversationAccess grant (or that install.sh / openclaw mlflow configure sets it) as a cause of missing traces on OpenClaw 2026.10.",
+          "passed": true,
+          "evidence": "Cause 2: allowConversationAccess grant; install.sh grants it; 'openclaw mlflow configure' fixes it."
+        },
+        {
+          "text": "The answer configures the harness with SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1.",
+          "passed": true,
+          "evidence": ".env block sets SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1."
+        },
+        {
+          "text": "The answer proposes a criteria check on the tool spans (requires_tool with tool_input_match, or a grounded judge) to verify the agent read the docs.",
+          "passed": true,
+          "evidence": "criteria with requires_tool: read + tool_input_match 'docs/' and a grounded_in_docs judge."
+        },
+        {
+          "text": "The answer does not claim that the connector records cost, or that it writes one LLM span per model call.",
+          "passed": true,
+          "evidence": "States 'Cost stays empty because OpenClaw only reports tokens' and 'All of a run's model calls appear as one llm_call span'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "schedule-and-auto-promote",
+      "eval_name": "schedule-and-auto-promote",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 107.7,
+        "tokens": 72862,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer names the SELFIMPROVE_ENABLED repository variable and the MLFLOW_TRACKING_URI secret (a shared server with a database backend) plus provider API key secrets.",
+          "passed": true,
+          "evidence": "Checklist: SELFIMPROVE_ENABLED=true, MLFLOW_TRACKING_URI secret with a database backend shared with production, provider secrets."
+        },
+        {
+          "text": "The answer describes the schedule: nightly score/monitor/align/triage/approve and a weekly cycle (improve + gate), via .github/workflows/selfimprove-loop.yml.",
+          "passed": true,
+          "evidence": "Table: nightly score/monitor/align/triage/approve at 06:17 UTC, weekly cycle Mondays 07:43 UTC in selfimprove-loop.yml."
+        },
+        {
+          "text": "The answer ties turning on SI_AUTO_PROMOTE to evidence, such as several manual/assisted runs where a person did not override the gate, rather than a fixed date.",
+          "passed": true,
+          "evidence": "'turn on SI_AUTO_PROMOTE=true only after levels 1 to 3 have run several times without a person overriding the gate', with an override tally and readiness checklist."
+        },
+        {
+          "text": "The answer explains that after an automatic promotion, monitor compares live traffic to the replaced version and rolls back beyond SI_ROLLBACK_MARGIN.",
+          "passed": true,
+          "evidence": "'monitor ... rolls back when the live failure rate climbs more than SI_ROLLBACK_MARGIN (0.10) above the rate the version replaced'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "gate-rejected-for-bloat",
+      "eval_name": "gate-rejected-for-bloat",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 67.0,
+        "tokens": 69766,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer tells the user to read the v7 diff and judge whether the extra length is new behavior (the security section) or padding/hedging before changing anything.",
+          "passed": true,
+          "evidence": "Section 3: 'Read the diff (selfimprove diff production 7) and check the gate run's gate_table.txt'."
+        },
+        {
+          "text": "The answer says raising SI_MAX_PROMPT_GROWTH is acceptable only as a deliberate decision by a person, recorded with a reason, not done just to make the candidate pass and not by the improver.",
+          "passed": false,
+          "evidence": "Says the threshold belongs to a person and to change it 'on purpose, for one candidate, after reading the diff', but never says to record a reason for the limit change (only promote --reason)."
+        },
+        {
+          "text": "The answer says to re-run the gate on the same candidate version (e.g. selfimprove gate 7) after the change, rather than generating a new candidate.",
+          "passed": true,
+          "evidence": "'SI_MAX_PROMPT_GROWTH=2.3 selfimprove gate <N>' re-gates the same candidate."
+        },
+        {
+          "text": "For GEPA's v9 must-pass failure, the answer says to open the failing row(s) to decide whether the agent or the no_credential_requests check is wrong (for example a refusal matching the regex).",
+          "passed": true,
+          "evidence": "'Look at the failing train rows and their rationales... If they're false positives... fix the verifier'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "openclaw-no-traces",
+      "eval_name": "openclaw-no-traces",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 103.5,
+        "tokens": 85823,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer says the connector exports over HTTP, so MLFLOW_TRACKING_URI must point at a running mlflow server instead of sqlite:///mlflow.db.",
+          "passed": true,
+          "evidence": "'The main cause is MLFLOW_TRACKING_URI=sqlite:///mlflow.db... You need a running mlflow server.'"
+        },
+        {
+          "text": "The answer mentions the hooks.allowConversationAccess grant (or that install.sh / openclaw mlflow configure sets it) as a cause of missing traces on OpenClaw 2026.10.",
+          "passed": true,
+          "evidence": "Table row: hooks.allowConversationAccess not true; 'openclaw mlflow configure sets it'."
+        },
+        {
+          "text": "The answer configures the harness with SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1.",
+          "passed": true,
+          "evidence": ".env sets SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1."
+        },
+        {
+          "text": "The answer proposes a criteria check on the tool spans (requires_tool with tool_input_match, or a grounded judge) to verify the agent read the docs.",
+          "passed": true,
+          "evidence": "check read_the_docs: requires_tool: read, tool_input_match: 'docs/', must_pass."
+        },
+        {
+          "text": "The answer does not claim that the connector records cost, or that it writes one LLM span per model call.",
+          "passed": false,
+          "evidence": "Claims 'an llm_call span for every model call' and 'Token usage and cost are attached'; neither holds for OpenClaw runs."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "schedule-and-auto-promote",
+      "eval_name": "schedule-and-auto-promote",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 109.3,
+        "tokens": 82788,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The answer names the SELFIMPROVE_ENABLED repository variable and the MLFLOW_TRACKING_URI secret (a shared server with a database backend) plus provider API key secrets.",
+          "passed": true,
+          "evidence": "Table: SELFIMPROVE_ENABLED variable, MLFLOW_TRACKING_URI secret (database backend), ANTHROPIC/OPENAI key secrets."
+        },
+        {
+          "text": "The answer describes the schedule: nightly score/monitor/align/triage/approve and a weekly cycle (improve + gate), via .github/workflows/selfimprove-loop.yml.",
+          "passed": true,
+          "evidence": "Section 4: nightly 06:17 UTC score->monitor->align->triage->approve; weekly Monday 07:43 UTC cycle."
+        },
+        {
+          "text": "The answer ties turning on SI_AUTO_PROMOTE to evidence, such as several manual/assisted runs where a person did not override the gate, rather than a fixed date.",
+          "passed": true,
+          "evidence": "'turn it on only after the loop has run several times without a person overriding the gate', with a tally and checklist."
+        },
+        {
+          "text": "The answer explains that after an automatic promotion, monitor compares live traffic to the replaced version and rolls back beyond SI_ROLLBACK_MARGIN.",
+          "passed": true,
+          "evidence": "Item 6: monitor compares the live failure rate with the rate recorded at promotion and rolls back beyond SI_ROLLBACK_MARGIN (0.10)."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 92.6,
+        "stddev": 24.5269,
+        "min": 64.3,
+        "max": 107.7
+      },
+      "tokens": {
+        "mean": 73890.0,
+        "stddev": 4222.9104,
+        "min": 70276,
+        "max": 78532
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.85,
+        "stddev": 0.1323,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 93.2667,
+        "stddev": 22.9317,
+        "min": 67.0,
+        "max": 109.3
+      },
+      "tokens": {
+        "mean": 79459.0,
+        "stddev": 8530.4451,
+        "min": 69766,
+        "max": 85823
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.15",
+      "time_seconds": "-0.7",
+      "tokens": "-5569"
+    }
+  },
+  "notes": []
+}
