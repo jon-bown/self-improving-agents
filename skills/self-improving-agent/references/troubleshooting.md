@@ -8,7 +8,7 @@ Problems met while building and running the loop, with their fixes. OpenClaw-spe
 | Symptom | Cause and fix |
 |---|---|
 | `import litellm` fails with `No module named 'mcp'` | litellm 1.106.x imports `mcp` without depending on it. Pin `litellm>=1.75,<1.106` (the harness and `sia/` both do). |
-| `cryptography` fails to load: `symbol not found ... _OSSL_get_max_threads` | the cryptography 50.x wheel and this Mac's OpenSSL. Install `cryptography==46.0.7` in that venv. It's machine-specific, so don't pin it in the project. |
+| `cryptography` fails to load: `symbol not found in flat namespace` (`_OSSL_get_max_threads`, `_BIO_ADDR_free`) | an Intel (x86_64) Python on macOS: an Intel Mac, or Apple Silicon with an Intel build of `uv` (check `file $(command -v uv)`). cryptography 49 and 50's Intel macOS wheel fails to load. The harness and `sia/` pin `cryptography<49` there automatically; for an older venv run `uv pip install -p .venv "cryptography<49"`. On Apple Silicon, prefer a native `uv` (`brew install uv` in `/opt/homebrew`) and recreate the venv. The root README's Platform support section has the details. |
 | the harness CLI hangs at exit after a run | litellm's HTTP client finalizer can deadlock at interpreter shutdown. The CLI flushes traces and exits hard; do the same in your own scripts (`mlflow.flush_trace_async_logging()`, then `os._exit`). |
 
 ## MLflow

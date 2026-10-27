@@ -151,6 +151,29 @@ Two things you'll see that are normal:
   5000ms" lines for every loaded plugin. That's the CLI process shutting down, not the gateway,
   and it doesn't affect tracing.
 
+## Next: start a self-improvement loop on these traces
+
+[`examples/self_improvement_demo.py`](examples/self_improvement_demo.py) takes the traces this
+plugin wrote and sets up the first pieces of a loop with plain MLflow. It registers your `AGENTS.md`
+in the Prompt Registry with a `production` alias. It scores the traces with `read_knowledge`, a code
+check on the `read` spans, and `grounded_in_docs`, a judge that sees the files the agent read. Then
+it adds the failures to an evaluation dataset, each tagged with its trace:
+
+```bash
+MLFLOW_TRACKING_URI=http://localhost:5000 python examples/self_improvement_demo.py \
+  --experiment openclaw --agents-md /path/to/your/AGENTS.md
+```
+
+It needs `mlflow[genai]` and the judge's API key (`ANTHROPIC_API_KEY` by default; `--judge-model`
+changes it). The checks assume the agent reads its policies from `knowledge/`; edit `read_knowledge`
+for your own layout. For the whole loop (triage, improvement and a gate), use the
+[harness](../../harness/README.md) with `SI_OPENCLAW_MLFLOW=1`.
+
+[`examples/demo.sh`](examples/demo.sh) is a five-minute version for a live demo: `server`, `setup`,
+then `ask "question"`, which always runs whatever `@production` points at. Edit `AGENTS.md` in the
+MLflow UI (a new prompt version, then move the `production` alias) and the next `ask` uses it;
+`./demo.sh use 1` rolls back. It keeps its own OpenClaw profile and server in `~/odsc-5min`.
+
 ## Change the settings
 
 Run `openclaw mlflow configure` again, then restart the gateway so it uses the new values:

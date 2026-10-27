@@ -27,6 +27,52 @@ workspace right before the agent runs (`src/sia/workspace.py`). Every change is 
 commit message, and every rollback is an alias move. The policy documents in `knowledge/` sit next to it in the
 workspace and stay fixed.
 
+## Architecture
+
+Every level is a script in `levels/` that calls the `sia` package. For MLflow and the server in
+detail, see [`docs/architecture.md`](../docs/architecture.md). The package runs the agent on one
+of three runtimes and keeps everything in one MLflow server.
+
+```mermaid
+flowchart TB
+  levels["levels/ · make level0 to level5<br/>0 instrument → 1 signal → 2 manual loop → 3 agent-assisted → 4 optimizer → 5 autonomous"]
+  env["sia/.env<br/>SIA_PROVIDER · API key · SIA_BACKEND"]
+  scenario["scenario/<br/>AGENTS.md v1 · knowledge/ · cases.yaml"]
+  subgraph pkg["src/sia: what every level calls"]
+    agent["agent.py + workspace.py<br/>render AGENTS.md, run the agent"]
+    data["reviewers.py · traffic.py · data.py<br/>labels · traffic · dataset"]
+    signals["signals.py<br/>checks · judges"]
+    improvers["improvers.py · loop.py<br/>analyst · self-edit · GEPA · one cycle"]
+    gate["gate.py<br/>scorecards · promote · rollback"]
+  end
+  runtime["Agent runtime, by SIA_BACKEND<br/>openclaw (isolated .openclaw-state/) · direct (LiteLLM) · offline (simulator)"]
+  subgraph mlflow["MLflow server: make server, port 5000"]
+    registry[("Prompt Registry<br/>acme-support-agents-md")]
+    traces[("Traces + assessments")]
+    dataset[("Evaluation dataset<br/>+ holdout")]
+    scorers[("Scorer registry<br/>quality, theme_* judges")]
+    runs[("Runs<br/>gates, cycles")]
+  end
+
+  levels ~~~ agent & data & signals & improvers & gate
+  env -- "provider presets (llm.py)" --> agent
+  scenario -- "AGENTS.md v1, knowledge/" --> agent
+  agent -- "runs on" --> runtime
+  agent -- "loads @production or a candidate" --> registry
+  agent -- "one trace per question" --> traces
+  data -- "labels" --> traces
+  data -- "tests" --> dataset
+  signals -- "verdicts" --> traces
+  signals -- "registered judges" --> scorers
+  improvers -- "candidate version" --> registry
+  gate -- "evaluates dataset + holdout" --> runs
+  gate -- "moves the alias" --> registry
+```
+
+The levels add pieces in order: level 0 uses `agent` and the Prompt Registry; level 1 adds
+`reviewers` and `signals`; level 2 adds `data` and `gate`; levels 3 and 4 add `improvers`; level 5
+hands everything to `loop.cycle()`, driven by simulated `traffic`.
+
 ## Quickstart
 
 ```bash
@@ -35,6 +81,9 @@ make install                      # uv venv + pip install -e ".[dev]"
 cp .env.example .env              # pick SIA_PROVIDER and add that provider's API key
 make server                       # MLflow on http://127.0.0.1:5000 (leave running)
 ```
+
+On an Intel (x86_64) Mac, or with an Intel Python on Apple Silicon, see
+[Platform support](../README.md#platform-support).
 
 In a second terminal:
 

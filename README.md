@@ -46,10 +46,18 @@ How they fit together:
   tutorial with one fixed agent. The harness is the reusable version that follows the blog
   posts and works with any agent.
 
+## Architecture
+
+* [`docs/architecture.md`](docs/architecture.md): MLflow and the MLflow server, and how one OpenClaw
+  answer (through the connector) and one Hermes answer (in process) become traces.
+* [`harness/README.md`](harness/README.md#architecture): the harness, and what one `cycle` does.
+* [`sia/README.md`](sia/README.md#architecture): the levels, the `sia` package and its runtimes.
+
 ## Shared by all four
 
 ```
 README.md            this map
+docs/                architecture.md: MLflow, the server, OpenClaw and Hermes
 .agents/skills/      MLflow's agent skills for coding agents (trace analysis, evaluation, scorers);
                      skills-lock.json pins them
 .github/workflows/   CI, one file per job, prefixed by component:
@@ -64,3 +72,61 @@ README.md            this map
 Personal agents are someone's real setup, so every component keeps its OpenClaw (and Hermes)
 state inside its own folder. None of them touches `~/.openclaw`, `~/.hermes`, or a gateway
 you already run.
+
+## Platform support
+
+| Platform | Status |
+|---|---|
+| macOS, Apple Silicon (arm64) | supported and recommended: the harness and SIA test suites pass |
+| macOS, Intel (x86_64), or an Intel Python under Rosetta on Apple Silicon | supported: the harness and SIA install a compatible `cryptography` automatically, and their tests pass |
+| Linux, x86_64 | supported: CI runs on `ubuntu-latest` |
+| Linux, arm64 | not tested |
+| Windows | not tested; use WSL2 |
+
+Everything needs Python 3.11 through [uv](https://docs.astral.sh/uv/). The connector needs Node 22+;
+it builds to a single JavaScript file, so it runs the same on either architecture.
+
+### Intel (x86_64) Macs, and Intel Pythons on Apple Silicon
+
+`cryptography` 49 and 50 publish an Intel macOS wheel that fails to load, with
+`symbol not found in flat namespace` (`_OSSL_get_max_threads`, `_BIO_ADDR_free`). MLflow imports it as
+soon as it opens a tracking store, so every command fails. Both `harness/pyproject.toml` and
+`sia/pyproject.toml` therefore pin `cryptography<49` on Intel macOS only (48.0.1 works). Apple Silicon
+and Linux are unaffected and get the latest.
+
+**Check what you're running:**
+
+```bash
+uname -m                                                    # the machine: arm64 or x86_64
+file "$(command -v uv)"                                     # the uv build: arm64 or x86_64
+.venv/bin/python -c "import platform; print(platform.machine())"   # the venv's Python
+```
+
+A venv's Python follows the `uv` build, not the machine. An Intel `uv` on Apple Silicon creates Intel
+venvs that run under Rosetta: they work, but more slowly.
+
+**On an Intel Mac:** nothing extra. `make install` (or the quickstart's `uv venv` + `uv pip install`)
+picks `cryptography` 48.0.1 for you.
+
+**On Apple Silicon:** use a native `uv`, so your venvs are arm64:
+
+```bash
+brew install uv          # with arm64 Homebrew in /opt/homebrew
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then delete any existing `.venv` and run `make install` again in `harness/` and `sia/`.
+
+**To build an Intel venv on purpose** (for example, to test Intel support from an Apple Silicon Mac),
+ask uv for an x86_64 Python:
+
+```bash
+uv venv -p cpython-3.11-macos-x86_64-none .venv && uv pip install -p .venv -e ".[dev]"
+```
+
+**A venv made before the pin**, or one where another package forces a newer `cryptography`, still
+fails. Fix it in place:
+
+```bash
+uv pip install -p .venv "cryptography<49"
+```

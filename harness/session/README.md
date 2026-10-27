@@ -65,7 +65,8 @@ criteria/loopN.yaml    the verifier, growing one loop at a time
 reviewer.py            simulated reviewers (in the room, that's you)
 precompute.py          runs the four loops into store/
 session.env            harness settings: OpenClaw, the connector, the session store
-notebooks/             one notebook per loop, reading store/
+notebooks/             one notebook per loop, reading store/ (with "Under the hood" MLflow cells)
+build_notebooks.py     writes notebooks/: edit this, then `.venv/bin/python session/build_notebooks.py`
 store/                 the precomputed MLflow store and results/loopN.json
 ```
 

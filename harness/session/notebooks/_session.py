@@ -26,6 +26,7 @@ pd.set_option("display.max_colwidth", 120)
 # Before anything imports selfimprove: its settings are read from this file at import time.
 os.environ["SI_ENV_FILE"] = str(SESSION / "session.env")
 warnings.filterwarnings("ignore", message="IProgress not found")
+os.environ.setdefault("MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR", "false")  # no download bars in cell output
 
 
 def load_keys() -> None:

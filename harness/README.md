@@ -21,6 +21,81 @@ traces ─┤ human labels           ├─────▶ dataset       ├─�
 | **config** | bring your own agent, models, criteria and guardrails | `.env` (from `.env.example`), `examples/criteria.yaml` |
 | **skill** | an agent skill that applies the framework with MLflow and the agent of your choice | [`../skills/`](../skills/README.md), at the repo root |
 
+## Architecture
+
+The harness sits between your agent and MLflow. For MLflow, the server, OpenClaw and Hermes in
+detail, see [`docs/architecture.md`](../docs/architecture.md). Your agent only ever answers a question with the
+instructions it is handed; everything around that call is the harness, and everything it decides
+is stored in MLflow.
+
+```mermaid
+flowchart TB
+  people(["You and your reviewers"])
+  subgraph harness["selfimprove: CLI, cycle, GitHub Actions"]
+    signal["Signal<br/>label · score · align"]
+    storej["Store<br/>triage, then approve"]
+    update["Update<br/>improve: analyst · MetaPrompt · GEPA"]
+    gate["Gate<br/>gate · promote · monitor"]
+  end
+  queue[/"human queue file"/]
+  subgraph mlflow["MLflow"]
+    traces[("Traces + assessments")]
+    dataset[("Evaluation dataset<br/>train + hidden holdout")]
+    registry[("Prompt Registry<br/>instructions @production")]
+    runs[("Runs<br/>one per job, gate scorecards")]
+  end
+  subgraph agent["Your agent"]
+    adapters["adapter: python · http · command<br/>litellm · openclaw"]
+    connector["OpenClaw MLflow connector"]
+  end
+
+  people -- "labels" --> signal
+  people -- "decisions" --> queue
+  people -- "promote" --> gate
+  signal -- "verdicts" --> traces
+  storej -- "reads failures" --> traces
+  storej -- "approved tests" --> dataset
+  storej -- "flagged tests" --> queue
+  update -- "reads the train split" --> dataset
+  update -- "new version, never promoted" --> registry
+  gate -- "evaluates train + holdout" --> runs
+  gate -- "moves the alias, or rolls back" --> registry
+  registry -- "instructions" --> adapters
+  adapters -- "one trace per call" --> traces
+  connector -- "OpenClaw's own spans" --> traces
+```
+
+| MLflow piece | What the harness keeps there | Written by |
+|---|---|---|
+| Traces + assessments | one trace per agent call, tagged `si_source` (`production` or `eval`) and `si_prompt_version`; human, code and judge verdicts on it | `agents.run`, `label`, `score` |
+| Prompt Registry | every version of the instructions, with `author`, `status`, `gate` and promotion tags; the `production` and `previous` aliases | `init`, `improve`, `promote`, `rollback`, `monitor` |
+| Evaluation dataset | tests with provenance tags (`source`, `author`, `source_trace`) and a hash-chosen `split` | `init`, `approve`, `queue accept` |
+| Runs | one run per job (`si.job`), with outcome, metrics and artifacts; the gate's nested evaluations | every job |
+
+Job checkpoints are experiment tags (`si.checkpoint.<job>`). The only state outside MLflow is the
+human queue file and the improvers' scratch workspaces.
+
+### One `cycle`
+
+`selfimprove cycle` runs the whole loop as one MLflow run, with each job nested inside it. The
+scheduled GitHub Actions workflow runs the first five jobs nightly and the full cycle weekly.
+
+```mermaid
+flowchart LR
+  score["score<br/>judges on new traces"] --> monitor["monitor<br/>undo a bad promotion"]
+  monitor --> align["align<br/>judge vs people"]
+  align --> triage["triage<br/>failures to themes to tests"]
+  triage --> approve["approve<br/>merge, or queue for a person"]
+  approve --> enough{"enough<br/>failures?"}
+  enough -- "yes" --> improve["improve<br/>write a candidate"]
+  enough -- "no" --> stop(["stop: no signal, no change"])
+  improve --> gate["gate<br/>train + hidden holdout"]
+  gate --> auto{"SI_AUTO_PROMOTE?"}
+  auto -- "yes, and it passed" --> alias(["move @production"])
+  auto -- "no" --> wait(["awaiting a person"])
+  align -. "judge drifted and re-alignment failed" .-> halt(["halt: queue for a person"])
+```
+
 ## Quickstart
 
 ```bash
@@ -30,6 +105,10 @@ cp .env.example .env            # add ANTHROPIC_API_KEY (or another provider), o
 .venv/bin/selfimprove doctor    # shows the config; checks that your agent loads
 .venv/bin/selfimprove init      # instructions v1 -> production; golden cases -> dataset
 ```
+
+On an Intel (x86_64) Mac, or with an Intel Python on Apple Silicon, see
+[Platform support](../README.md#platform-support): it works, and the root README says how to check
+which one you have.
 
 The defaults run the example agent (`examples/support_agent.py`, a support agent for a fictional
 product with three seeded flaws). With no API key it falls back to a rule-based stand-in and code
