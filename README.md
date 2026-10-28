@@ -82,6 +82,46 @@ Personal agents are someone's real setup, so every component keeps its OpenClaw 
 state inside its own folder. None of them touches `~/.openclaw`, `~/.hermes`, or a gateway
 you already run.
 
+## Requirements
+
+| Tool | Version | Needed for | Install |
+|---|---|---|---|
+| Python | 3.11 | harness, SIA, blog code | `uv python install 3.11` |
+| [uv](https://docs.astral.sh/uv/) | latest | every Python venv (`make install`) | `brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| `make`, `git` | any | running the levels and workflows | preinstalled on macOS (`xcode-select --install`) and most Linux |
+| Node.js + npm | 22+ | OpenClaw and the connector | `brew install node@22`, or [nvm](https://github.com/nvm-sh/nvm): `nvm install 22` |
+| OpenClaw | 2026.10+ | the OpenClaw runtime, the connector, the talk demo | see [Installing OpenClaw](#installing-openclaw) |
+| MLflow | 3.17.2+ | everything | installed for you by `make install` (`mlflow[genai]`) |
+| A model provider key | | live runs (not the offline modes or tests) | `ANTHROPIC_API_KEY`, or another provider, in each component's `.env` |
+
+The offline backends (`SIA_BACKEND=offline`, the harness's offline workflow) and the unit tests run
+without OpenClaw or an API key.
+
+### Installing OpenClaw
+
+OpenClaw ships as an npm package. With Node 22+ on your `PATH`:
+
+```bash
+node --version             # v22.x or later
+npm install -g openclaw
+openclaw --version         # 2026.10 or later
+```
+
+If `npm install -g` fails with a permissions error, use a Node from Homebrew or nvm rather than
+`sudo`. To upgrade an older OpenClaw, run `npm install -g openclaw@latest`.
+
+You don't need to run `openclaw onboard` or start a gateway. Each component creates its own
+isolated OpenClaw profile (`.selfimprove/openclaw/` in the harness, `.openclaw-state/` in SIA) and
+leaves `~/.openclaw` alone. If `openclaw` isn't on your `PATH`, point the connector at it with
+`OPENCLAW_BIN=/path/to/openclaw`.
+
+The connector and the live demo also need an MLflow **server**, because traces are exported over
+HTTP. Leave one running in its own terminal (on a Mac, port 5000 is usually taken by AirPlay):
+
+```bash
+mlflow server --port 5070
+```
+
 ## Platform support
 
 | Platform | Status |
