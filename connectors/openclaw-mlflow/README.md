@@ -28,17 +28,18 @@ the fixes.
 
 * Node 22+ and `openclaw` on your `PATH` (`npm i -g openclaw`, 2026.10 or later).
 * An MLflow **server**. The plugin exports traces over HTTP, so a `sqlite:///` store won't
-  work. Start one and leave it running:
+  work. Start one and leave it running. The examples here use port 5070, because on a Mac
+  MLflow's usual port 5000 is normally taken by the AirPlay Receiver:
 
   ```bash
-  mlflow server --port 5000
+  mlflow server --port 5070
   ```
 
 * An experiment for the traces, identified by its **id**. `install.sh --experiment NAME`
   creates it for you. To create one yourself, run this and note the id it prints:
 
   ```bash
-  MLFLOW_TRACKING_URI=http://localhost:5000 mlflow experiments create -n openclaw
+  MLFLOW_TRACKING_URI=http://localhost:5070 mlflow experiments create -n openclaw
   ```
 
 ## Install
@@ -48,7 +49,7 @@ the fixes.
 From this folder:
 
 ```bash
-./install.sh --tracking-uri http://localhost:5000 --experiment openclaw
+./install.sh --tracking-uri http://localhost:5070 --experiment openclaw
 ```
 
 It builds the plugin, installs it into your OpenClaw profile, and points it at the experiment,
@@ -119,6 +120,39 @@ this folder.
 
 ## Check that traces arrive
 
+### Watch it live on its own server
+
+To show the connection working, start a fresh MLflow server in another shell and leave it
+running. It keeps its data in `~/openclaw-mlflow`, and port 5070 stays clear of the live demo
+(5050) and the tutorial servers. If a server from the Requirements step is already on 5070,
+stop it first.
+
+```bash
+mkdir -p ~/openclaw-mlflow && cd ~/openclaw-mlflow && mlflow server --host 127.0.0.1 --port 5070
+```
+
+In your first shell, create an experiment and note the id it prints:
+
+```bash
+MLFLOW_TRACKING_URI=http://127.0.0.1:5070 mlflow experiments create -n openclaw-live
+```
+
+Point the plugin at it, entering `http://127.0.0.1:5070` and that id, then restart the gateway:
+
+```bash
+openclaw mlflow configure
+```
+
+```bash
+openclaw gateway restart
+```
+
+Open http://127.0.0.1:5070, choose **openclaw-live**, open **Traces**, and run a turn as
+shown below. The trace appears a few seconds after the reply. To go back to your usual server,
+run `configure` again with its URI and id.
+
+### Check the settings and run a turn
+
 Show the settings the plugin will use:
 
 ```bash
@@ -127,7 +161,7 @@ openclaw mlflow status
 
 ```
   Enabled:        true
-  Tracking URI:   http://localhost:5000
+  Tracking URI:   http://localhost:5070
   Experiment ID:  1
   Conversation access: true
 ```
@@ -138,10 +172,49 @@ Then run one turn through the gateway:
 openclaw agent --agent main -m "Say hello in five words"
 ```
 
-Open the MLflow UI (http://localhost:5000), pick the experiment, and open **Traces**. Each run
+Open the MLflow UI (http://localhost:5070), pick the experiment, and open **Traces**. Each run
 is one trace: an `AGENT` root span, one `LLM` span for the run's model calls, and a `TOOL` span
 per tool call, plus token usage, the model and the session. OpenClaw reports tokens but not
 cost, so MLflow's cost charts stay empty. Runs with `--local` are traced too, without a gateway.
+
+### Prompts that make good example traces
+
+A greeting produces only the root and one `LLM` span. To show more, ask for something that makes
+OpenClaw use its tools. Each prompt below produced the spans listed when tested in a profile with
+OpenClaw's default tools:
+
+| Prompt | Spans under the root |
+|---|---|
+| `"Say hello in five words"` | `llm_call` only |
+| `"List the files in your workspace and tell me in one line what each is for."` | `ls`, then a `read` per file |
+| `"Read AGENTS.md and summarize it in three bullet points."` | `read` |
+| `"Use a shell command to find today's date and how many days are left in the year."` | `exec` |
+| `"Create checklist.md with three steps for preparing a talk, then read it back to me."` | `write`, then `read` |
+| `"What's our API rate limit? Check your files before answering."` | several `exec` searches and `read`s |
+
+For example:
+
+```bash
+openclaw agent --agent main -m "Create checklist.md with three steps for preparing a talk, then read it back to me."
+```
+
+Click a trace to see the span tree. Each `TOOL` span holds the tool's arguments and result, and
+the `LLM` span holds the messages and token counts. The last prompt is a good one to explain:
+when the files don't contain the answer, the trace shows exactly where the agent looked.
+
+To show a conversation, give two turns the same `--session-id`. MLflow groups them in the
+**Sessions** view:
+
+```bash
+openclaw agent --agent main --session-id live-1 -m "What's our API rate limit? Check your files before answering."
+```
+
+```bash
+openclaw agent --agent main --session-id live-1 -m "Thanks. Which files did you check?"
+```
+
+The `checklist.md` prompt writes a real file into your workspace, so delete it afterwards if you
+don't want to keep it.
 
 Two things you'll see that are normal:
 
@@ -150,6 +223,23 @@ Two things you'll see that are normal:
 * One-off CLI commands such as `openclaw mlflow status` may end with "forced retirement after
   5000ms" lines for every loaded plugin. That's the CLI process shutting down, not the gateway,
   and it doesn't affect tracing.
+
+If `openclaw mlflow` fails with "OpenClaw does not know the command", the plugin is installed
+but disabled. This can happen after reinstalling OpenClaw, which can also clear the plugin's
+settings. OpenClaw only adds the commands of enabled plugins, so `configure` can't turn it back
+on. Enable it first, then configure it and restart the gateway:
+
+```bash
+openclaw plugins enable mlflow-openclaw
+```
+
+```bash
+openclaw mlflow configure
+```
+
+```bash
+openclaw gateway restart
+```
 
 ## Next: start a self-improvement loop on these traces
 
@@ -160,7 +250,7 @@ check on the `read` spans, and `grounded_in_docs`, a judge that sees the files t
 it adds the failures to an evaluation dataset, each tagged with its trace:
 
 ```bash
-MLFLOW_TRACKING_URI=http://localhost:5000 python examples/self_improvement_demo.py \
+MLFLOW_TRACKING_URI=http://localhost:5070 python examples/self_improvement_demo.py \
   --experiment openclaw --agents-md /path/to/your/AGENTS.md
 ```
 
@@ -197,7 +287,7 @@ openclaw gateway restart
 To script it instead, set the keys with `openclaw config set`:
 
 ```bash
-openclaw config set --batch-json '[{"path":"plugins.entries.mlflow-openclaw.config.trackingUri","value":"http://127.0.0.1:5000"},{"path":"plugins.entries.mlflow-openclaw.config.experimentId","value":"3"}]'
+openclaw config set --batch-json '[{"path":"plugins.entries.mlflow-openclaw.config.trackingUri","value":"http://127.0.0.1:5070"},{"path":"plugins.entries.mlflow-openclaw.config.experimentId","value":"3"}]'
 ```
 
 To set a single key, quote the id as JSON: `openclaw config set
@@ -238,7 +328,7 @@ plugin without touching `~/.openclaw` or your gateway:
 
 ```bash
 export OPENCLAW_STATE_DIR=/tmp/oc-test OPENCLAW_CONFIG_PATH=/tmp/oc-test/openclaw.json
-./install.sh --tracking-uri http://localhost:5000 --experiment openclaw-test
+./install.sh --tracking-uri http://localhost:5070 --experiment openclaw-test
 openclaw agent --local --agent main -m "Say hello in five words"
 ```
 

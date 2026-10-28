@@ -14,6 +14,7 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 STORE = HARNESS / ".selfimprove" / "notebooks"
+MIN_MLFLOW = "3.17.2"  # keep in step with harness/pyproject.toml
 
 
 def setup(fresh: bool = False, offline: bool | None = None):
@@ -26,9 +27,10 @@ def setup(fresh: bool = False, offline: bool | None = None):
     os.chdir(HARNESS)
     if str(HARNESS) not in sys.path:
         sys.path.insert(0, str(HARNESS))
+    _check_mlflow()
+    _drop_cached_stores()
     if fresh:
-        _drop_cached_stores()
-        shutil.rmtree(STORE, ignore_errors=True)
+        _reset_store()
     STORE.mkdir(parents=True, exist_ok=True)
     env_file = HARNESS / ".env" if (HARNESS / ".env").is_file() else HARNESS / ".env.example"
     os.environ.update({
@@ -43,6 +45,9 @@ def setup(fresh: bool = False, offline: bool | None = None):
         "SI_WORKSPACE_DIR": "examples/knowledge",
         "SI_CRITERIA_FILE": "examples/criteria.yaml",
         "SI_GOLDEN_FILE": "examples/golden.yaml",
+        # Other notebooks' kernels share this store; never serve a prompt from before a reset.
+        "MLFLOW_ALIAS_PROMPT_CACHE_TTL_SECONDS": "0",
+        "MLFLOW_VERSION_PROMPT_CACHE_TTL_SECONDS": "0",
     })
     os.environ.pop("ANTHROPIC_BASE_URL", None)  # talk to the Anthropic API directly
     from dotenv import load_dotenv
@@ -67,24 +72,87 @@ def setup(fresh: bool = False, offline: bool | None = None):
 
 
 def _drop_cached_stores() -> None:
-    """Close MLflow's pooled SQLite connections so a re-run of setup(fresh=True) can delete the store.
+    """Start this kernel on fresh MLflow connections, with no cached stores or prompts.
 
-    MLflow caches one engine per URI on the store classes (and the tracking store itself). Deleting
-    mlflow.db under those open connections leaves them on the unlinked file, and the next write fails
-    with "attempt to write a readonly database".
+    MLflow caches one engine per URI on the store classes (and the tracking store itself). If
+    mlflow.db was ever deleted under those connections, they stay on the unlinked file and every
+    write fails with "attempt to write a readonly database". Re-running any notebook's setup cell
+    clears that.
     """
     if "mlflow" not in sys.modules:
         return
+    import mlflow
+    from mlflow.prompt.registry_utils import PromptCache
     from mlflow.store.model_registry.sqlalchemy_store import SqlAlchemyStore as RegistryStore
     from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore as TrackingStore
+    from mlflow.tracking._model_registry import utils as registry_utils
     from mlflow.tracking._tracking_service import utils as tracking_utils
 
+    try:
+        mlflow.flush_trace_async_logging()  # don't let a previous run's traces land after a reset
+    except Exception:
+        pass
     for cls in (TrackingStore, RegistryStore):
         with cls._engine_map_lock:
             for engine in cls._engine_map.values():
                 engine.dispose()
             cls._engine_map.clear()
     tracking_utils._tracking_store_registry._get_store_with_resolved_uri.cache_clear()
+    registry_utils._get_store_registry()._get_store_with_resolved_uri.cache_clear()
+    PromptCache._reset_instance()
+
+
+def _check_mlflow() -> None:
+    """Refuse to run on an MLflow older than the harness's.
+
+    Every notebook shares one mlflow.db. A newer MLflow migrates its schema forward when it
+    connects, and an older one can't open it after that ("Detected out-of-date database schema"),
+    or builds an old schema that the newer kernels then migrate. Either way the cause is usually a
+    notebook on the wrong kernel, so name the interpreter.
+    """
+    from importlib.metadata import version
+
+    from packaging.version import Version
+
+    found = version("mlflow")
+    if Version(found) < Version(MIN_MLFLOW):
+        raise RuntimeError(
+            f"This kernel runs MLflow {found} ({sys.executable}); the notebooks need >= {MIN_MLFLOW}. "
+            f"Switch to the 'selfimprove (.venv)' kernel from `make install`, or upgrade this "
+            f"environment: uv pip install -p {sys.prefix} 'mlflow[genai]>={MIN_MLFLOW}'"
+        )
+
+
+def _reset_store() -> None:
+    """Empty the notebook store in place, keeping the same mlflow.db file.
+
+    The file is never deleted: a process that has it open (another notebook's kernel, the MLflow
+    UI) would stay on the unlinked copy, where every write fails with "attempt to write a readonly
+    database". Instead every table is dropped, and this kernel's MLflow recreates the schema (at its
+    own version) the next time it connects. Everything else under STORE (artifacts, workspaces,
+    the human queue) is removed.
+    """
+    import sqlite3
+
+    db = STORE / "mlflow.db"
+    if STORE.is_dir():
+        for p in STORE.iterdir():
+            if not p.name.startswith("mlflow.db"):  # keep mlflow.db and its -journal/-wal/-shm
+                shutil.rmtree(p) if p.is_dir() else p.unlink()
+    if not db.exists():
+        return
+
+    con = sqlite3.connect(db, timeout=30, isolation_level=None)
+    try:
+        con.execute("PRAGMA foreign_keys = OFF")
+        con.execute("BEGIN IMMEDIATE")
+        for kind, name in con.execute(
+                "SELECT type, name FROM sqlite_master WHERE type IN ('view', 'table') "
+                "AND name NOT LIKE 'sqlite_%' ORDER BY type DESC").fetchall():
+            con.execute(f'DROP {kind.upper()} IF EXISTS "{name}"')
+        con.execute("COMMIT")
+    finally:
+        con.close()
 
 
 def tree(trace, width: int = 90) -> None:

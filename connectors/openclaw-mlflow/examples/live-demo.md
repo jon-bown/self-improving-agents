@@ -272,6 +272,183 @@ or `gate` misbehaves.
 
 Then go on to step 6.
 
+## More of MLflow (to fill the time)
+
+The five-minute story uses tracing, the Prompt Registry, a custom judge, issue detection and an
+alias-based deploy. The segments below show more of MLflow on the same agent and the same traces.
+Each one stands alone, so use as many as the slot allows. They're listed where they fit the story.
+Most take a second or two because they only read and write MLflow. The ones that call a judge or
+run OpenClaw say how long they take.
+
+Every trace `ask`, `traffic`, `gate`, `chat` and `eval` make is **linked to the `AGENTS.md`
+version that produced it**. The trace page shows the prompt version, the prompt page shows its
+traces, and `prompt = 'openclaw-agents-md/1'` finds all of them. The same step copies the trace's
+spans into the server's span table. The connector uploads spans only as a JSON file, and `span.*`
+searches, the Overview's tool charts and the server-side judges in segment E read the table. The
+segments below rely on both.
+
+### A. Search the traces (after step 2, about 1 min, instant)
+
+```bash
+./demo.sh traces
+```
+
+This lists every trace with its version, latency, tokens, the files it read and its verdicts, then
+a summary per version, then searches to try, each with its match count:
+
+```
+time     ver   secs tokens  grounded human  question                                           files read
+11:49:13 v1       6  16570  FAIL     -      What's the API rate limit?                         product_howto.md
+11:51:23 v1       5  17405  FAIL     -      Do you have an uptime SLA?                         billing.md, product_howto.md
+...
+version  traces  avg s avg tokens  grounded pass rate
+v1            6      6      16860  2/6
+
+    6 every trace v1 produced (the link `ask` adds)  ./demo.sh traces "prompt = 'openclaw-agents-md/1'"
+    4 traces the grounding judge failed              ./demo.sh traces "feedback.grounded_in_docs = 'false'"
+    3 traces that opened billing.md                  ./demo.sh traces "span.name = 'read' AND span.content ILIKE '%billing.md%'"
+    1 answers that say 99.9                          ./demo.sh traces "metadata.\`mlflow.traceOutputs\` ILIKE '%99.9%'"
+```
+
+Paste any of those filters into the Traces page's search box: it's the same `search_traces` syntax.
+Say: "Every verdict is searchable. 'Which v1 answers did the judge fail?' is one query."
+
+Full-text search (`trace.text ILIKE ...`) also searches the LLM span's input, which holds the whole
+`AGENTS.md`. So searching for v1's quick facts matches every v1 trace. To search answers only, use
+`metadata.\`mlflow.traceOutputs\``.
+
+### B. A person's verdict, next to the judge's (after step 2, about 1 min, instant)
+
+```bash
+./demo.sh feedback no "Made up the SLA: no policy file mentions one"
+./demo.sh expect "Our policy files don't cover an uptime SLA. A specialist will reply by email within 1 business day."
+```
+
+```
+logged human_review=no from jon on: Do you have an uptime SLA?
+   the grounded_in_docs judge said fail: it agrees with you
+logged expected_response on: Do you have an uptime SLA?
+```
+
+Both apply to the newest trace (`--trace ID` picks another). In the trace's **Assessments** panel,
+`human_review` (source HUMAN) sits next to the judges' verdicts (source LLM_JUDGE and CODE), and
+`expected_response` is an expectation, the ground truth that `Correctness` and the dataset use.
+Say: "Judges scale, but people set the bar. MLflow keeps both on the same trace."
+
+### C. MLflow's built-in judges (after B, about 20 s)
+
+```bash
+./demo.sh judges
+```
+
+This runs eight judges on the newest trace: `RelevanceToQuery`, `Safety`, `Completeness`,
+`ToolCallEfficiency`, a one-line `Guidelines` judge, your `grounded_in_docs`, the
+`read_knowledge` code check, and `Correctness` once segment B has added an expected answer. In
+rehearsal, on the SLA answer:
+
+```
+   relevance_to_query       pass  (built-in)
+   safety                   pass  (built-in)
+   completeness             pass  (built-in)
+   tool_call_efficiency     pass  (built-in)
+   no_unverified_promises   FAIL  (built-in)
+   grounded_in_docs         FAIL  (yours)
+   read_knowledge           pass  (code)
+   correctness              FAIL  (built-in)
+```
+
+Say: "Off-the-shelf judges think a confident, made-up answer is relevant, safe and complete. A
+one-sentence guideline, a judge that sees the files, or your expected answer is what catches it."
+
+### D. The judge model behind the AI Gateway (about 30 s)
+
+```bash
+./demo.sh gateway
+```
+
+```
+AI Gateway: endpoint judge -> anthropic claude-sonnet-5-5; the key is a secret on the server now
+a judge on gateway:/judge: True in 16.4 s, 668 tokens, no API key in this process's call
+In MLflow: http://127.0.0.1:5050/#/gateway  (AI Gateway: endpoints, models, secrets, usage)
+```
+
+This creates an MLflow AI Gateway endpoint on the tracking server: the Anthropic key is stored as
+an encrypted secret, a model definition points at the judge model, and the endpoint `judge` serves
+it with usage tracking. Any judge can then use `model="gateway:/judge"` without its own key.
+Open the **AI Gateway** page for the endpoint, its model and the secret (shown masked). Segment E
+needs this, and `monitor on` creates it if it's missing.
+
+### E. Score production automatically (about 2 min, mostly waiting)
+
+```bash
+./demo.sh monitor on
+./demo.sh ask "Where is my data hosted?"
+```
+
+`monitor on` registers a judge on the server and starts it at a 100% sample rate. MLflow's job
+runner checks for new traces about once a minute and scores them, with no script running. The
+judge is a `make_judge` with `{{ trace }}` in its instructions, so it reads the trace's spans
+itself (through tools) instead of being handed the files. It runs on the server, so it has to call
+its model through the AI Gateway (segment D). About a minute after the `ask`:
+
+```bash
+./demo.sh traces "feedback.grounded_live IS NOT NULL"
+```
+
+`traces` shows the server's verdict in the `live` column. In rehearsal the first verdicts arrived
+within two minutes. If the server's scheduler runs before `ask` has copied the trace's spans into
+the span table, that pass fails (`Trace data not stored in tracking store` in the server's
+terminal) and the next pass, a minute later, scores the trace. Show the experiment's **Judges**
+tab (the registered judge and its sample rate) and the new `grounded_live` verdict on the trace. Say: "Offline, you run evaluations. In production, the
+server scores every trace as it arrives." `./demo.sh monitor off` stops it, and
+`./demo.sh monitor` shows its status.
+
+### F. A conversation, judged as one session (about 1.5 min)
+
+```bash
+./demo.sh chat
+```
+
+`chat` holds a three-turn conversation with the same session id: a documented billing question,
+the SLA question, then a question that checks the agent remembers the first answer. Each turn is
+a trace, and the connector tags all three with the session. MLflow's conversation judges then
+score the session as a whole: `UserFrustration`, `ConversationCompleteness`,
+`KnowledgeRetention`, and a `ConversationalGuidelines` judge for "never promises credits". On v1,
+in rehearsal, all four passed: no frustration, every question answered, the retry count recalled
+correctly, and the SLA answer not read as a promise. Open the **Sessions** view to show the three
+turns as one chat, with the session verdicts on it. Say: "Session judges catch what only shows up
+across turns, like forgetting what the customer said. They don't catch the made-up SLA, because
+each turn's facts still need a per-turn grounding check."
+
+### G. A regression test set, and two versions run against it (after step 5, about 1.5 min each)
+
+```bash
+./demo.sh dataset
+./demo.sh eval 1
+./demo.sh eval 2
+```
+
+`dataset` makes the evaluation dataset `openclaw-golden`: three golden cases written from the
+policy files (the refund window, a password reset, and the SLA, which should be escalated), plus
+any expected answer a person gave in segment B. A person's answer replaces the golden one for the
+same question. `eval N` runs version N on each case through OpenClaw, scores the runs with
+`Correctness`, `grounded_in_docs` and `read_knowledge`, and logs them as an evaluation run linked
+to that prompt version. Production keeps running throughout.
+
+On **Evaluation runs**, select both runs and click **Compare**: v1 fails the SLA case, and v2
+passes it without breaking the refund answer. Say: "That's the gate's check as a reusable test
+set. Every future version runs against the same cases."
+
+### H. The prompt's history (after step 5, instant)
+
+```bash
+./demo.sh prompts 1 2
+```
+
+This lists every version with its aliases, tags (`author=openclaw`, `gate=passed`, `issue_id`)
+and the number of traces it produced, then diffs v1 and v2. It's the same view as the prompt page,
+which is worth showing too.
+
 ## If something goes wrong
 
 | Problem | Do this |
@@ -308,6 +485,17 @@ took 29–31 s and about $0.10 on six traces in rehearsal. Two early rehearsals 
                                  failed) -> a candidate
 ./demo.sh gate [N]               test candidate N (default: newest) on two failed questions + the
                                  refund holdout; promote it only if every check passes
+./demo.sh traces ["FILTER"]      search traces (any MLflow filter); latency, tokens and verdicts
+                                 per AGENTS.md version
+./demo.sh prompts [A B]          every AGENTS.md version: aliases, tags, traces it made; diff A B
+./demo.sh feedback yes|no "why"  your verdict on the newest trace (--trace ID for another)
+./demo.sh expect "answer"        your expected answer for the newest trace
+./demo.sh judges                 MLflow's built-in LLM judges on the newest trace (~20 s)
+./demo.sh gateway                an MLflow AI Gateway endpoint for the judge model
+./demo.sh monitor on|off|status  the server scores every new trace by itself, about once a minute
+./demo.sh chat                   a three-turn conversation, judged as one session (~1.5 min)
+./demo.sh dataset                an evaluation dataset: golden cases + your expected answers
+./demo.sh eval [N]               run version N (default @production) on the dataset (~1.5 min)
 ./demo.sh push FILE "message"    register FILE as a new version and point @production at it
 ./demo.sh use N                  point @production at version N (moving it back is a rollback)
 ./demo.sh pull                   copy @production into the workspace without asking anything
@@ -324,6 +512,7 @@ touching the stage setup.
 | [`demo.sh`](demo.sh) | every command above; sets the OpenClaw profile, the tracking URI and the API key |
 | [`agents_md.py`](agents_md.py) | `push`, `pull` and `use`: the Prompt Registry calls (`register_prompt`, `set_prompt_alias`, `load_prompt`) |
 | [`self_improvement_demo.py`](self_improvement_demo.py) | `score`: `mlflow.genai.evaluate` over the existing traces, with no `predict_fn`, so nothing re-runs |
+| [`mlflow_features.py`](mlflow_features.py) | the segments under "More of MLflow": `link` (run by `ask` and `traffic`), `traces`, `prompts`, `feedback`, `expect`, `judges`, `gateway`, `monitor`, `chat`, `dataset` and `eval` |
 | [`self_improve_loop.py`](self_improve_loop.py) | `detect`, `improve` and `gate`: MLflow's `discover_issues`, the improver's OpenClaw run (a second profile, no connector), the candidate's tags, the gate's runs, the alias move and resolving the Issue |
 | [`agents/v1.md`](agents/v1.md), [`agents/v2.md`](agents/v2.md) | the instructions before and after the fix |
 | [`../install.sh`](../install.sh) | builds and installs the MLflow connector into the demo's OpenClaw profile |
