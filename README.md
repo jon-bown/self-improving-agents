@@ -32,7 +32,7 @@ tests, and none imports another.
 | **[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md)** | The OpenClaw → MLflow connector: MLflow's `@mlflow/mlflow-openclaw` tracing plugin, with the fixes it needs on OpenClaw 2026.10. Every OpenClaw run becomes an MLflow trace (`AGENT` → `LLM` / `TOOL` spans, tokens, session). Works with any OpenClaw profile. | `./install.sh --tracking-uri http://localhost:5000 --experiment openclaw` |
 | **[`harness/`](harness/README.md)** | The MLflow self-improving harness, `selfimprove`: the blog series' framework (signal → store → update, with triage, approval and a gate) for an agent you bring (a Python function, an HTTP service, a CLI, OpenClaw or Hermes), configured from `.env`. Ships workflows, walkthrough notebooks, and the talk's four-loop demo in [`harness/session`](harness/session/README.md). | `make install doctor` |
 | **[`sia/`](sia/README.md)** | The level-based self-improving agent (SIA): the tutorial's Acme Cloud support agent on OpenClaw, built up over six levels from tracing to an unattended loop. Set your provider and API key in `.env`, and every level runs with `make`. | `make install server`, then `make level0 level1 level2` |
-| **[`skills/`](skills/README.md)** | The `self-improving-agent` agent skill: everything above, packaged for a coding agent. It applies the framework with the harness, its workflows and the connector, writes verifiers, handles gate rejections, and keeps to the rules (the proposer never approves, the holdout stays hidden). | `cp -r skills/self-improving-agent ~/.claude/skills/` |
+| **[`skills/`](skills/README.md)** | Two agent skills. `self-improving-agent`: everything above, packaged for a coding agent. It applies the framework with the harness, its workflows and the connector, writes verifiers, handles gate rejections, and keeps to the rules (the proposer never approves, the holdout stays hidden). `self-improving-with-mlflow`: loaded by OpenClaw itself, so the agent can check its standing, pass on corrections, recall confirmed lessons and propose changes to itself, all through the harness's gate. | `cp -r skills/self-improving-agent ~/.claude/skills/`; `selfimprove self setup --workspace <dir>` |
 
 How they fit together:
 
@@ -40,11 +40,20 @@ How they fit together:
   isolated OpenClaw profile (`SI_OPENCLAW_MLFLOW=1`). The talk demo relies on it, because
   whether the agent read a policy file is only visible in OpenClaw's own spans. SIA can use it
   too (see its README).
-* The **skill** is how a coding agent uses the other three: it knows the harness's commands and
-  workflows, the connector's setup, and the verifier patterns from the talk's four loops.
+* The **skills** are how agents use the other three. `self-improving-agent` is for a coding agent:
+  it knows the harness's commands and workflows, the connector's setup, and the verifier
+  patterns from the talk's four loops. `self-improving-with-mlflow` is for OpenClaw at runtime: it
+  runs the harness's `selfimprove self` commands about itself, and the harness keeps the gate.
 * The **harness** and **SIA** are two builds of the same loop. SIA is the step-by-step
   tutorial with one fixed agent. The harness is the reusable version that follows the blog
   posts and works with any agent.
+
+## Demos
+
+| Demo | Length | What it shows |
+|---|---|---|
+| [`connectors/openclaw-mlflow/examples/live-demo.md`](connectors/openclaw-mlflow/examples/live-demo.md) | 5 min, live | ask a local OpenClaw a question, catch the made-up answer in its MLflow trace, fix `AGENTS.md` in MLflow (a new prompt version, then an alias move), ask again |
+| [`harness/session/`](harness/session/README.md) | 4 loops, precomputed | the self-improvement loop run four times on OpenClaw, from a person doing every step to `cycle` promoting through the gate |
 
 ## Architecture
 

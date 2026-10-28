@@ -212,7 +212,21 @@ Each job is one MLflow run (tag `si.job`) with its outcome, metrics and artifact
 
 The human queue (`selfimprove queue list | accept | edit | reject`) holds everything the
 automation refuses to decide: reviewer contradictions, failures without an expected answer,
-flagged tests, judge-only failures that need a label, and halts.
+flagged tests, judge-only failures that need a label, halts, and the agent's own reports and
+skill proposals (below).
+
+### The agent's side: `selfimprove self`
+
+With the [`self-improving-with-mlflow`](../skills/self-improving-with-mlflow/SKILL.md) skill, a
+deployed OpenClaw takes part in its own loop. It runs four commands, each printing one JSON object:
+`self status` (its version, last gate, live failure rate), `self note` (a user corrected it: a
+`self_reported` note plus a `self_report` queue item, which only becomes a label when a person
+accepts it), `self recall` (the confirmed lessons that fit a request) and `self propose` (an
+AGENTS.md candidate for the gate, or a skill change for a person). The owner runs
+`self lessons` (build the lessons pack from confirmed train-split failures, as a candidate),
+`self sync` (write production into the live workspace) and `self setup` (an isolated OpenClaw
+profile whose exec allowlist reaches only those four commands). See
+[the operator guide](../skills/self-improving-with-mlflow/references/operator.md).
 
 Guardrails (`.env`): `SI_TRIAGE_THRESHOLD`, `SI_TESTS_PER_THEME_CAP`, `SI_HOLDOUT_FRACTION`,
 `SI_AGREEMENT_THRESHOLD`, `SI_MIN_ALIGNMENT_TRACES`, `SI_PROMOTION_MARGIN`, `SI_MAX_PROMPT_GROWTH`,
@@ -253,8 +267,9 @@ few dollars, most of it in notebooks 03 and 05.
 
 ## The skill
 
-The `self-improving-agent` skill now lives at the repo root, in [`skills/`](../skills/README.md):
-it teaches a coding agent to apply this harness, its workflows and the OpenClaw connector.
+Both skills live at the repo root, in [`skills/`](../skills/README.md): `self-improving-agent`
+teaches a coding agent to apply this harness, its workflows and the OpenClaw connector, and
+`self-improving-with-mlflow` is loaded by OpenClaw itself to use the `selfimprove self` commands.
 
 ## Layout
 
@@ -267,7 +282,8 @@ selfimprove/
   store.py         dataset, holdout, checkpoints, the human queue
   improvers.py     failure report, analyst, optimizers, coding agent
   approver.py      approval checks                gate.py      scorecards + promotion rules
-  feedback.py      human labels, review queues    workflows/   the scheduled jobs
+  feedback.py      human labels, review queues    workflows/   the scheduled jobs (+ deployed.py)
+  agentside.py     `selfimprove self` commands the agent runs   lessons.py  the lessons pack
   cli.py           `selfimprove <command>`
 examples/          the support agent, its instructions, criteria, golden cases, reviewers, Hermes
 notebooks/         the walkthrough

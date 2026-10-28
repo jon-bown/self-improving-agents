@@ -6,6 +6,9 @@ Assessment conventions (Part 1, section 2.2):
                                       and the judge aligned), CODE from checks.
     expectation  "expected_response"  the right answer, from a person or a golden case. A judge
                                       verdict never becomes an expectation (Part 3, section 3).
+    feedback     "self_reported"      the agent's own report that the user corrected it
+                                      (`selfimprove self note`). Not a verdict: nothing reads it
+                                      as a failure until a person confirms it from the queue.
 Boolean feedback is stored as text: filter with feedback.quality = 'false', not = False.
 """
 
@@ -21,6 +24,8 @@ from selfimprove import config
 
 QUALITY = "quality"
 EXPECTED = "expected_response"
+SELF_REPORTED = "self_reported"
+NOT_VERDICTS = (SELF_REPORTED,)   # feedback that never counts as a failure or as being scored
 FAILED = f"feedback.{QUALITY} = 'false'"
 PASSED = f"feedback.{QUALITY} = 'true'"
 HAS_EXPECTATION = f"expectation.{EXPECTED} IS NOT NULL"
@@ -162,14 +167,14 @@ def has_verdict(trace: Trace, must_pass: tuple[str, ...] = ()) -> bool:
 
 def unscored(trace: Trace) -> bool:
     return not any(a.source.source_type in (AssessmentSourceType.CODE, AssessmentSourceType.LLM_JUDGE)
-                   for a in trace.info.assessments)
+                   and a.name not in NOT_VERDICTS for a in trace.info.assessments)
 
 
 def failing_verdicts(trace: Trace) -> list[dict]:
     return [{"name": a.name, "source": f"{a.source.source_type}:{a.source.source_id}",
              "rationale": (a.rationale or "")[:400]}
             for a in trace.info.assessments
-            if a.feedback is not None and _valid(a) and is_fail(a.value)]
+            if a.feedback is not None and _valid(a) and is_fail(a.value) and a.name not in NOT_VERDICTS]
 
 
 SESSION_KEY = "openclaw.session_key"   # set by the OpenClaw adapter on its span

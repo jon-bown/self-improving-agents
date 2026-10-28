@@ -7,6 +7,8 @@
     update    improve · diff
     ship      gate · promote · rollback · monitor
     loop      cycle · report
+    agent     self status · note · recall · propose   (run by the agent itself; JSON out)
+    deployed  self lessons · sync · setup              (the operator's side of the same skill)
 """
 
 from __future__ import annotations
@@ -113,7 +115,33 @@ def _queue(args) -> None:
             rec.setdefault("inputs", {})[store.config.settings.input_key] = args.input
     status = {"accept": "accepted", "reject": "rejected", "edit": "edited"}[args.action]
     out = store.resolve(args.id, status, note=args.note or "", **({"record": rec} if rec else {}))
-    print(json.dumps({k: out.get(k) for k in ("id", "kind", "status")}))
+    print(json.dumps({k: out.get(k) for k in ("id", "kind", "status", "applied_to") if k != "applied_to" or k in out}))
+
+
+def _self(args) -> None:
+    import json
+
+    from selfimprove import agentside, traces
+
+    traces.setup()
+    if args.action == "status":
+        out = agentside.status()
+    elif args.action == "note":
+        out = agentside.note(args.trace, user_said=args.user_said, interpretation=args.interpretation,
+                             expected=args.expected, session=args.session)
+    elif args.action == "recall":
+        out = agentside.recall(args.request, k=args.k)
+    else:
+        file = args.file
+        if args.text is not None:  # the deployed agent has no `write` tool: it passes the text inline
+            import tempfile
+
+            with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+                f.write(args.text)
+            file = f.name
+        out = agentside.propose(args.target, file or "", why=args.why,
+                                evidence=[e for e in (args.evidence or "").split(",") if e])
+    print(json.dumps(out, default=str))
 
 
 def _job(fn):
@@ -121,7 +149,7 @@ def _job(fn):
         from selfimprove import traces
 
         traces.setup()
-        kwargs = {k: v for k, v in vars(args).items() if k not in ("func", "command") and v is not None}
+        kwargs = {k: v for k, v in vars(args).items() if k not in ("func", "command", "action") and v is not None}
         result = fn(**kwargs)
         if isinstance(result, str):
             print(result)
@@ -143,7 +171,7 @@ def _rollback(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    from selfimprove.workflows import align, approve, cycle, improve, report, score, ship, triage
+    from selfimprove.workflows import align, approve, cycle, deployed, improve, report, score, ship, triage
 
     p = argparse.ArgumentParser(prog="selfimprove", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -234,6 +262,41 @@ def main(argv: list[str] | None = None) -> None:
     c.set_defaults(func=_job(cycle.cycle))
     sub.add_parser("report", help="the baseline numbers and what a person still owns").set_defaults(
         func=_job(report.report))
+
+    c = sub.add_parser("self", help="commands the agent runs about itself (JSON out)")
+    actions = c.add_subparsers(dest="action", required=True)
+    actions.add_parser("status", help="production version, last gate, live failure rate").set_defaults(func=_self)
+    a = actions.add_parser("note", help="the user corrected an answer: report it for a person to confirm")
+    a.add_argument("--trace", default="previous", help='a trace id, or "previous" (the newest answer)')
+    a.add_argument("--user-said", dest="user_said", required=True, help="the user's exact words")
+    a.add_argument("--interpretation", required=True, help="one sentence: what the agent got wrong")
+    a.add_argument("--expected", help="the correct answer, only if the user stated it")
+    a.add_argument("--session", help="the conversation's mlflow.trace.session key, if known")
+    a.set_defaults(func=_self)
+    a = actions.add_parser("recall", help="the confirmed lessons that fit a request")
+    a.add_argument("request", help="the user's request, in their words")
+    a.add_argument("--k", type=int, default=3, help="at most this many lessons (1-5)")
+    a.set_defaults(func=_self)
+    a = actions.add_parser("propose", help="propose a change to yourself; the gate or a person decides")
+    a.add_argument("--target", required=True, help="AGENTS.md, or skill:<name>")
+    src = a.add_mutually_exclusive_group(required=True)
+    src.add_argument("--file", help="the full proposed file (a skill folder works too)")
+    src.add_argument("--text", help="the full proposed file, inline")
+    a.add_argument("--why", required=True, help="two or three sentences: what the evidence shows")
+    a.add_argument("--evidence", required=True, help="comma-separated trace ids of confirmed failures")
+    a.set_defaults(func=_self)
+    # Operator side: the deployed agent's wrapper refuses these.
+    a = actions.add_parser("lessons", help="build the lessons pack from confirmed failures, as a candidate")
+    a.add_argument("--gate", action="store_true", help="run the gate on it now")
+    a.add_argument("--no-llm", dest="use_llm", action="store_false", help="write lessons without an LLM")
+    a.set_defaults(func=_job(deployed.lessons_job))
+    a = actions.add_parser("sync", help="write production AGENTS.md / LESSONS.md into the live workspace")
+    a.add_argument("--workspace", help="the live workspace (default SI_SELF_WORKSPACE)")
+    a.set_defaults(func=_job(deployed.sync))
+    a = actions.add_parser("setup", help="write the deployed OpenClaw profile (read + exec, Workshop off)")
+    a.add_argument("--workspace", required=True, help="the live workspace")
+    a.add_argument("--profile", help="the profile folder (default .selfimprove/openclaw-live)")
+    a.set_defaults(func=_job(deployed.setup))
 
     args = p.parse_args(argv)
     code = 0

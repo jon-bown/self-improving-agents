@@ -13,7 +13,7 @@ registered as a new prompt version, tagged with who wrote it and from which run.
 
 from __future__ import annotations
 
-from selfimprove import config, improvers, instructions, signals, store, traces
+from selfimprove import config, improvers, instructions, lessons, signals, store, traces
 from selfimprove.workflows import Result, finish, job
 from selfimprove.workflows.triage import judge_trusted
 
@@ -53,6 +53,7 @@ def improve(improver: str | None = None, budget: int = 60, from_file: str | None
             text, why = improvers.coding_agent(report, prod.template, label=run.info.run_id[:8])
         else:
             raise ValueError(f"SI_IMPROVER={kind!r}: choose analyst, gepa, metaprompt or command")
+        text = lessons.keep(text, prod.template)  # lessons change only through `self lessons`
 
         if text.strip() == prod.template.strip():
             return finish(Result("improve", "no_change", f"{kind} proposed no change"))

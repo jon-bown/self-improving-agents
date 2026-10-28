@@ -122,6 +122,16 @@ class Settings:
     fail_threshold: float = field(default_factory=lambda: _float("SI_FAIL_THRESHOLD", 0.15))
     min_traces: int = field(default_factory=lambda: _int("SI_MIN_TRACES", 8))
     auto_promote: bool = field(default_factory=lambda: _get("SI_AUTO_PROMOTE", "false").lower() == "true")
+    # `selfimprove self note`: reports per conversation per day, and how far back "previous" looks
+    self_note_max_per_session: int = field(default_factory=lambda: _int("SI_SELF_NOTE_MAX_PER_SESSION", 5))
+    self_note_window_min: float = field(default_factory=lambda: _float("SI_SELF_NOTE_WINDOW_MIN", 30))
+    # `selfimprove self propose`: confirmed failures a proposal must cite, and whether it gates at once
+    self_propose_min_evidence: int = field(default_factory=lambda: _int("SI_SELF_PROPOSE_MIN_EVIDENCE", 2))
+    self_propose_gate: bool = field(default_factory=lambda: _get("SI_SELF_PROPOSE_GATE") == "1")
+    # `selfimprove self lessons`: at most this many lessons (one per theme) in the pack
+    lessons_max: int = field(default_factory=lambda: _int("SI_LESSONS_MAX", 8))
+    # Deployed mode: the live OpenClaw workspace `self sync` writes, and its isolated profile
+    self_workspace: Path | None = field(default_factory=lambda: _path("SI_SELF_WORKSPACE"))
 
     # Local state: checkpoints, the human queue, improver workspaces
     state_dir: Path = field(default_factory=lambda: _path("SI_STATE_DIR", ".selfimprove"))

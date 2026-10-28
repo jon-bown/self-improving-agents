@@ -162,7 +162,8 @@ def save_checkpoint(job: str, ms: int | None = None) -> None:
 # --------------------------------------------------------------------------------------------
 # The human queue: everything the automation refuses to decide on its own
 # --------------------------------------------------------------------------------------------
-QUEUE_KINDS = ("contradiction", "needs_expectation", "flagged_test", "judge_only_failure", "halt")
+QUEUE_KINDS = ("contradiction", "needs_expectation", "flagged_test", "judge_only_failure", "halt", "self_report",
+               "skill_proposal")
 
 
 def _queue_file():
@@ -184,11 +185,12 @@ def queue_items(status: str | None = "open") -> list[dict]:
 
 
 def enqueue(kind: str, reason: str, trace_id: str | None = None, record: dict | None = None, **extra) -> str:
-    """Send something to a person. Deduplicated on (kind, trace_id, question)."""
+    """Send something to a person. Deduplicated on (kind, trace_id, question, extra `dedupe` key)."""
     assert kind in QUEUE_KINDS, kind
-    key = (kind, trace_id, question_of(record) if record else None)
+    key = (kind, trace_id, question_of(record) if record else None, extra.get("dedupe"))
     for item in queue_items(status=None):
-        if (item["kind"], item.get("trace_id"), question_of(item["record"]) if item.get("record") else None) == key:
+        if (item["kind"], item.get("trace_id"), question_of(item["record"]) if item.get("record") else None,
+                item.get("dedupe")) == key:
             return item["id"]
     item = {"id": uuid.uuid4().hex[:8], "kind": kind, "reason": reason, "trace_id": trace_id, "record": record,
             "status": "open", "created": int(time.time()), **extra}
@@ -198,12 +200,36 @@ def enqueue(kind: str, reason: str, trace_id: str | None = None, record: dict | 
 
 
 def resolve(item_id: str, status: str, note: str = "", **extra) -> dict:
-    """Close a queue item (accepted / rejected / edited). Accepted and edited records join the dataset."""
+    """Close a queue item (accepted / rejected / edited). Accepted and edited records join the dataset.
+
+    A `self_report` is different: accepting it turns the agent's report into a person's `quality`
+    label on the trace (and `expected_response`, if one is set). The record does not join the
+    dataset here; triage picks up the labeled failure like any other, with its theme cap.
+    Accepting a `skill_proposal` writes the proposed SKILL.md into the live workspace's skills
+    (SI_SELF_WORKSPACE): the person's accept is the approval, and nothing else applies it.
+    """
     item = next(i for i in queue_items(status=None) if i["id"] == item_id)
     update = {"id": item_id, "status": status, "note": note, "resolved": int(time.time()), **extra}
     with _queue_file().open("a") as f:
         f.write(json.dumps(update, default=str) + "\n")
     item.update(update)
+    if item["kind"] == "self_report":
+        if status in ("accepted", "edited"):
+            from selfimprove import feedback
+
+            expected = ((item.get("record") or {}).get("expectations") or {}).get(traces.EXPECTED)
+            feedback.label(item["trace_id"], passed=False, expected_response=expected,
+                           rationale=note or f"confirmed agent report: {item.get('interpretation', '')} "
+                                             f"(user said: {item.get('user_said', '')!r})")
+        return item
+    if item["kind"] == "skill_proposal":
+        ws = config.settings.self_workspace
+        if status == "accepted" and ws:
+            path = ws / "skills" / item["skill"] / "SKILL.md"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(item["proposed"])
+            item["applied_to"] = str(path)
+        return item
     if status in ("accepted", "edited") and item.get("record"):
         rec = item["record"]
         rec["tags"] = {**rec.get("tags", {}), "source": "queue", "approved_by": "human",

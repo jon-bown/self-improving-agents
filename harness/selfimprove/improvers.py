@@ -19,7 +19,7 @@ import subprocess
 import mlflow
 from mlflow.entities import AssessmentSourceType
 
-from selfimprove import agents, config, instructions, models, traces
+from selfimprove import agents, config, instructions, lessons, models, traces
 
 
 def failure_report(trs, limit: int = 60) -> list[dict]:
@@ -170,6 +170,6 @@ def coding_agent(report: list[dict], current: str, label: str) -> tuple[str, str
         proc = subprocess.run(cmd, shell=True, cwd=ws, capture_output=True, text=True, timeout=1800)
         if proc.returncode != 0:
             raise RuntimeError(f"improver command exited {proc.returncode}: {proc.stderr[-1500:]}")
-        text = (ws / name).read_text()
+        text = lessons.join((ws / name).read_text(), current)  # the lessons block is not the editor's to change
         span.set_outputs({"stdout": proc.stdout[-2000:], "changed": text != current})
     return text, (proc.stdout.strip()[-400:] or "coding agent edit")

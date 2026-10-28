@@ -24,7 +24,7 @@ from pathlib import Path
 import mlflow
 from mlflow.entities import SpanType
 
-from selfimprove import config, instructions
+from selfimprove import config, instructions, lessons
 
 
 def adapter():
@@ -71,12 +71,17 @@ def _render(text: str) -> Path:
         if src and src.is_dir():
             shutil.copytree(src, ws / src.name)
         ws.mkdir(parents=True, exist_ok=True)
+        text, pack = lessons.split(text)
         (ws / instructions_filename()).write_text(text)
+        if pack:
+            (ws / lessons.FILENAME).write_text(pack)
     return ws
 
 
 def workspace_for(text: str) -> Path:
     """A directory holding this exact instructions text plus the fixed SI_WORKSPACE_DIR files.
+
+    A lessons block in the text is written out as LESSONS.md, with a pointer left in its place.
 
     Keyed by a hash of the text, because during optimize_prompts MLflow swaps each candidate's
     text into the loaded prompt: candidates never share a workspace.
@@ -96,7 +101,7 @@ def run(question: str, ref: str | int = "production", source: str = "eval", tags
                 **(tags or {}),
             })
         text = prompt.template
-        answer = adapter()(question, text, workspace_for(text))
+        answer = adapter()(question, lessons.split(text)[0], workspace_for(text))
         span.set_outputs(answer)
         return answer
 
