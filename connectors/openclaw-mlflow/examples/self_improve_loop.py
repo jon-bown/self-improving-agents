@@ -116,9 +116,17 @@ def agent_traces(experiment_id: str) -> list:
 def index_trace(trace, prompt_version) -> None:
     """Link a trace to the AGENTS.md version that produced it, and copy its spans into the server's
     span table. The connector uploads spans only as a JSON artifact, and the server reads the table
-    for span.* searches, the Overview's tool charts and the judges `monitor` runs on the server."""
+    for span.* searches, the Overview's tool charts and the judges `monitor` runs on the server.
+    The connector's spans carry an OTel trace id that doesn't match the trace's own id (logged as
+    is, they'd become a second trace), so each span is rebuilt with the trace's id first."""
+    import base64
+
+    from mlflow.entities import Span
+
     MlflowClient().link_prompt_versions_to_trace([prompt_version], trace.info.trace_id)
-    _get_store().log_spans(trace.info.experiment_id, trace.data.spans)
+    otel_id = base64.b64encode(bytes.fromhex(trace.info.trace_id.removeprefix("tr-"))).decode()
+    spans = [Span.from_dict({**s.to_dict(), "trace_id": otel_id}) for s in trace.data.spans]
+    _get_store().log_spans(trace.info.experiment_id, spans)
 
 
 def open_issues(experiment_id: str) -> list:

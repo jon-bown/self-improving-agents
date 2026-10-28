@@ -39,7 +39,7 @@ import mlflow  # noqa: E402
 from mlflow import MlflowClient  # noqa: E402
 from mlflow.entities import AssessmentSource, AssessmentSourceType, SpanType  # noqa: E402
 
-from self_improve_loop import HOLDOUT, agent_traces, answer_of, is_pass, openclaw_reply  # noqa: E402
+from self_improve_loop import HOLDOUT, agent_traces, answer_of, index_trace, is_pass, openclaw_reply  # noqa: E402
 from self_improvement_demo import _last_message, grounded_in_docs, quiet_evaluate, read_knowledge  # noqa: E402
 
 logging.getLogger("mlflow").setLevel(logging.ERROR)
@@ -143,13 +143,13 @@ def wrap(text: str, width: int = 96, indent: str = "      ") -> str:
 
 def link(args) -> None:
     """Link every trace since `--since` to the version @production points at (what `ask` just ran).
-    The trace page then shows the prompt, and `prompt = "name/N"` finds every trace a version made."""
-    client = MlflowClient()
+    The trace page then shows the prompt, and `prompt = 'name/N'` finds every trace a version made.
+    This also copies the spans into the server's span table (see index_trace)."""
     pv = mlflow.genai.load_prompt(f"prompts:/{args.name}@production")
     n = 0
     for t in agent_traces(experiment().experiment_id):
         if t.info.request_time >= args.since and "mlflow.linkedPrompts" not in t.info.tags:
-            client.link_prompt_versions_to_trace([pv], t.info.trace_id)
+            index_trace(t, pv)
             n += 1
     if args.verbose:
         print(f"linked {n} trace(s) to {args.name} v{pv.version}")
@@ -157,12 +157,12 @@ def link(args) -> None:
 
 # --- traces: search ------------------------------------------------------------------------------
 
-# The connector uploads spans whole, so span.* filters find nothing on this server; these all work.
 EXAMPLES = [
     ("prompt = '{name}/1'", "every trace v1 produced (the link `ask` adds)"),
     ("feedback.grounded_in_docs = 'false'", "traces the grounding judge failed"),
     ("feedback.grounded_in_docs = 'false' AND prompt = '{name}/1'", "...and that v1 produced"),
     (f"feedback.{HUMAN} IS NOT NULL", "traces a person reviewed"),
+    ("span.name = 'read' AND span.content ILIKE '%billing.md%'", "traces that opened billing.md"),
     ("metadata.`mlflow.traceOutputs` ILIKE '%99.9%'", "answers that say 99.9"),
     ("metadata.`mlflow.trace.session` LIKE '%chat-%'", "turns from ./demo.sh chat"),
     ("trace.execution_time_ms > 7000", "the slowest turns"),
@@ -181,7 +181,7 @@ def traces(args) -> None:
         print("no traces match")
         return
 
-    print(f"{'time':<8} {'ver':<4} {'secs':>5} {'tokens':>6}  {'grounded':<8} {'human':<5}  "
+    print(f"{'time':<8} {'ver':<4} {'secs':>5} {'tokens':>6}  {'grounded':<8} {'live':<4} {'human':<5}  "
           f"{'question':<50} files read")
     by_version: dict[str, list] = {}
     for t in found:
@@ -191,7 +191,7 @@ def traces(args) -> None:
         secs = (t.info.execution_duration or 0) / 1000
         by_version.setdefault(v, []).append((secs, tokens, g))
         when = datetime.fromtimestamp(t.info.request_time / 1000).strftime("%H:%M:%S")
-        print(f"{when:<8} {v:<4} {secs:>5.0f} {tokens:>6}  {mark(g):<8} {yes_no(latest(t, HUMAN)):<5}  "
+        print(f"{when:<8} {v:<4} {secs:>5.0f} {tokens:>6}  {mark(g):<8} {mark(latest(t, MONITOR)):<4} {yes_no(latest(t, HUMAN)):<5}  "
               f"{question_of(t)[:50]:<50} {', '.join(files_read(t)) or '-'}")
 
     print(f"\n{'version':<8} {'traces':>6} {'avg s':>6} {'avg tokens':>10}  grounded pass rate")
@@ -385,7 +385,8 @@ def monitor(args) -> None:
 # --- chat: a conversation, judged as one session -------------------------------------------------
 
 def chat(args) -> None:
-    from mlflow.genai.scorers import ConversationCompleteness, KnowledgeRetention, UserFrustration
+    from mlflow.genai.scorers import (ConversationalGuidelines, ConversationCompleteness, KnowledgeRetention,
+                                      UserFrustration)
 
     exp = experiment()
     session = f"chat-{uuid.uuid4().hex[:6]}"
@@ -400,7 +401,9 @@ def chat(args) -> None:
     sessions = {t.info.trace_metadata.get("mlflow.trace.session") for t in turns}
     print(f"\n{len(turns)} trace(s), session id(s) in MLflow: {', '.join(sorted(s or '-' for s in sessions))}")
     m = args.judge_model
-    scorers = [UserFrustration(model=m), ConversationCompleteness(model=m), KnowledgeRetention(model=m)]
+    scorers = [UserFrustration(model=m), ConversationCompleteness(model=m), KnowledgeRetention(model=m),
+               ConversationalGuidelines(name="no_unverified_promises", model=m,
+                                        guidelines="The assistant never promises credits, refunds or guarantees.")]
     print("judging the whole conversation ...", flush=True)
     quiet_evaluate([mlflow.get_trace(t.info.trace_id) for t in turns], scorers)
     first = mlflow.get_trace(turns[0].info.trace_id)  # session verdicts land on the first turn
@@ -464,7 +467,7 @@ def evaluate_version(args) -> None:
             start = int(time.time() * 1000)
             openclaw_reply(dict(os.environ), message=q)
             t = next(t for t in reversed(agent_traces(exp.experiment_id)) if t.info.request_time >= start)
-            client.link_prompt_versions_to_trace([pv], t.info.trace_id)
+            index_trace(t, pv)
             client.set_trace_tag(t.info.trace_id, "eval_of", f"v{pv.version}")
             mlflow.log_expectation(trace_id=t.info.trace_id, name=EXPECTED,
                                    value=row["expectations"][EXPECTED], source=human())
