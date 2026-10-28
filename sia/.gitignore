@@ -1,0 +1,8 @@
+# Local state of the level-based SIA (see README.md)
+mlflow.db
+mlruns/
+mlartifacts/
+.workspaces/
+.openclaw-state/
+proposals/
+notebooks/.mlflow/

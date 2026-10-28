@@ -1,0 +1,71 @@
+# The scheduled loop (Part 3). Nightly: keep the signal flowing, check the judge, read new
+# failures, approve tests. Weekly: write a candidate and gate it. Each job is an MLflow run.
+#
+# Off until you opt in: set the repository variable SELFIMPROVE_ENABLED=true, the secret
+# MLFLOW_TRACKING_URI (a server with a database backend, shared with production), and your
+# provider's API key. Promotion stays with a person unless the variable SI_AUTO_PROMOTE=true.
+name: selfimprove-loop
+on:
+  schedule:
+    - cron: "17 6 * * *"     # nightly: score, align, triage, approve
+    - cron: "43 7 * * 1"     # Mondays: the full cycle (improve + gate)
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "one job, or cycle"
+        type: choice
+        options: [cycle, score, align, triage, approve, improve, gate, monitor, report]
+        default: cycle
+jobs:
+  loop:
+    if: ${{ vars.SELFIMPROVE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    concurrency: selfimprove-loop      # never two loop jobs at once
+    defaults:
+      run:
+        working-directory: harness
+    env:
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      SI_EXPERIMENT: ${{ vars.SI_EXPERIMENT || 'my-agent' }}
+      SI_IMPROVER: ${{ vars.SI_IMPROVER || 'analyst' }}
+      SI_AUTO_PROMOTE: ${{ vars.SI_AUTO_PROMOTE || 'false' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # optional cheap first-pass judge (Jev); leave unset to use the text judge alone
+      SI_FAST_JUDGE_MODEL: ${{ vars.SI_FAST_JUDGE_MODEL }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e .
+      - run: cp .env.example .env
+      # The human queue is a file; keep it between runs. (Point SI_STATE_DIR at shared storage
+      # if several people work the queue.)
+      - uses: actions/cache@v4
+        with:
+          path: harness/.selfimprove/human_queue.jsonl
+          key: selfimprove-queue-${{ github.run_id }}
+          restore-keys: selfimprove-queue-
+      - name: nightly
+        if: ${{ github.event.schedule == '17 6 * * *' }}
+        run: |
+          .venv/bin/selfimprove score
+          .venv/bin/selfimprove monitor
+          .venv/bin/selfimprove align
+          .venv/bin/selfimprove triage
+          .venv/bin/selfimprove approve
+      - name: weekly cycle
+        if: ${{ github.event.schedule == '43 7 * * 1' }}
+        run: .venv/bin/selfimprove cycle
+      - name: one job
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: .venv/bin/selfimprove ${{ inputs.job }}
+      - name: report
+        if: always()
+        run: .venv/bin/selfimprove report | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: human-queue
+          path: harness/.selfimprove/human_queue.jsonl
+          if-no-files-found: ignore

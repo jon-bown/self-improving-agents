@@ -1,0 +1,9 @@
+# Loop 1 production traffic: skips the lookup (billing and how-to questions the stale quick facts answer)
+How long do I have to request a refund?
+I bought the annual plan three weeks ago. Can I still get a refund?
+My password reset link from this morning isn't working. Why?
+How long am I locked out after too many wrong passwords?
+How many teammates can I invite on the Pro plan?
+What happens if my card payment fails?
+How do I export my data, and in what formats?
+Can I change the email address my invoices go to?

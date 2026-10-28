@@ -1,0 +1,10 @@
+.env
+.venv/
+.selfimprove/
+mlruns/
+mlartifacts/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+session/.state/

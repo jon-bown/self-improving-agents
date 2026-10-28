@@ -1,0 +1,15 @@
+# Production traffic for the example agent (one question per line)
+How long can I wait to request a refund?
+I'm on the annual plan. Do I get a longer refund window than monthly customers?
+I bought Pro three weeks ago and barely used it. Can I get a partial refund?
+How do I change the email address my invoices go to?
+What happens if my card payment fails?
+How long is a password reset link valid?
+I reset my password but still can't log in. What should I do?
+I typed my password wrong a bunch of times and now I'm locked out. How long?
+I lost my phone with my authenticator app. How do I get back in?
+Can we set up SSO with Okta on our Pro plan?
+How do I export all my data?
+How many teammates can I invite on Pro?
+Does Acme Cloud integrate with Jira?
+I lost my API key. Can you show it to me again?

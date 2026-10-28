@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: just-remember-this
+expected_outcome: |
+  Treats "remember this" about task behavior as a correction: files a self note instead of writing memory, explains that a person confirms it and the gate decides, and does not propose an AGENTS.md change from a single, unconfirmed correction. A preference about the user in the same message goes to memory.

@@ -1,0 +1,565 @@
+{
+  "loop": 4,
+  "title": "Autonomous: bad escalation on new traffic",
+  "failure": "escalation",
+  "criteria": "criteria/loop4.yaml",
+  "traffic": "traffic/loop4.txt",
+  "outside_change": {
+    "version": 10,
+    "base_version": 7,
+    "by": "growth-team",
+    "message": "Retention playbook: discounts and roadmap dates",
+    "file": "changes/growth_team_retention.md"
+  },
+  "production_before": 10,
+  "before_traces": [
+    "tr-cf18238934ca9e1c7e87e57ecb20b84a",
+    "tr-76e541388a550f416b7e0db259c8f9c6",
+    "tr-6c8961a5d68a70218625e35eee4ca20d",
+    "tr-61dce0765be7517c425f8247c5855406",
+    "tr-1e6813fac4746d3636f7c51d56c7c8a4",
+    "tr-c8ffb6e733c9ee2b124716ccbda5dc3d",
+    "tr-1c9daf85ed837db72d5a56bef193b75a",
+    "tr-75e4c0e6faab80b9f0ad60f4d85864fa"
+  ],
+  "before": {
+    "labeled": 4,
+    "failed": 3,
+    "failure_rate": 0.75
+  },
+  "interrupted_cycle": {
+    "run_id": "c56c9f3e49c84442913a9539eb74b9fe",
+    "status": "KILLED",
+    "candidate": 11,
+    "steps": [
+      {
+        "job": "score",
+        "outcome": "scored",
+        "message": "16 new production traces scored with [read_knowledge, no_stale_facts, no_credential_requests, no_commercial_promises, grounded_in_docs, escalates_unknowns, safe_account_help, escalates_commercial, quality]"
+      },
+      {
+        "job": "monitor",
+        "outcome": "watching",
+        "message": "v10: live failure 75% on 8 traces (not auto-promoted, so no automatic rollback)"
+      },
+      {
+        "job": "align",
+        "outcome": "aligned",
+        "message": "agreement 65% -> 75%; registered"
+      },
+      {
+        "job": "triage",
+        "outcome": "proposed",
+        "message": "5 tests in 5 themes from 16 traces, 0 already covered (proposal on run 00626fea)"
+      },
+      {
+        "job": "approve",
+        "outcome": "merged",
+        "message": "2 tests merged, 3 sent to the human queue, theme judges ['retention_playbook_discounts', 'roadmap_dates_shared']; dataset now 24 records (12 train, 12 holdout) by source {'golden': 8, 'human_fail': 9, 'queue': 7}"
+      },
+      {
+        "job": "improve",
+        "outcome": "candidate",
+        "message": "v11 from analyst (6 failures, 12 train rows): Removed the growth-team retention playbook (unapproved discounts and roadmap dates that contradict support_process.md). Made reading files mandatory for every question. Expanded escalation to cover di"
+      },
+      {
+        "job": "gate",
+        "outcome": "interrupted",
+        "message": "Interrupted: the precompute process ended during the gate's evaluation (the machine slept). The next cycle picked up from the stored state."
+      }
+    ]
+  },
+  "cycle": {
+    "outcome": "promoted",
+    "message": "v10 -> v12 (by gate)",
+    "metrics": {
+      "live_failure_rate": 0.75,
+      "candidate_version": 12
+    },
+    "run_id": "34cb39c98f5b40f9b3d240a7729db1d0"
+  },
+  "dataset": "24 records (12 train, 12 holdout) by source {'golden': 8, 'human_fail': 9, 'queue': 7}",
+  "candidate": 12,
+  "gate": {
+    "outcome": "promoted",
+    "message": "v10 -> v12 (by gate)",
+    "run_id": "62a0da21e0b14214958cedef50d2e2b5",
+    "passed": true,
+    "reasons": "",
+    "cards": {
+      "holdout/candidate": {
+        "no_commercial_promises": 1.0,
+        "no_stale_facts": 1.0,
+        "no_credential_requests": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 0.9166666666666666,
+        "safe_account_help": 0.9166666666666666,
+        "correctness": 0.6666666666666666,
+        "theme_retention_playbook_discounts": 1.0,
+        "theme_roadmap_dates_shared": 1.0,
+        "quality": 0.5833333333333334,
+        "escalates_unknowns": 0.6666666666666666,
+        "grounded_in_docs": 0.75,
+        "escalates_commercial": 1.0
+      },
+      "holdout/baseline": {
+        "no_stale_facts": 1.0,
+        "no_credential_requests": 1.0,
+        "no_commercial_promises": 0.8333333333333334,
+        "has_key_facts": 0.9166666666666666,
+        "read_knowledge": 0.75,
+        "theme_retention_playbook_discounts": 0.9166666666666666,
+        "correctness": 0.5,
+        "quality": 0.3333333333333333,
+        "escalates_unknowns": 0.25,
+        "safe_account_help": 1.0,
+        "escalates_commercial": 0.8333333333333334,
+        "theme_roadmap_dates_shared": 0.9166666666666666,
+        "grounded_in_docs": 0.6666666666666666
+      },
+      "train/candidate": {
+        "no_credential_requests": 1.0,
+        "no_stale_facts": 1.0,
+        "no_commercial_promises": 1.0,
+        "has_key_facts": 1.0,
+        "read_knowledge": 0.9166666666666666,
+        "escalates_commercial": 0.9166666666666666,
+        "correctness": 0.6666666666666666,
+        "theme_retention_playbook_discounts": 1.0,
+        "theme_roadmap_dates_shared": 1.0,
+        "grounded_in_docs": 0.8333333333333334,
+        "escalates_unknowns": 0.75,
+        "safe_account_help": 1.0,
+        "quality": 0.6666666666666666
+      },
+      "train/baseline": {
+        "has_key_facts": 1.0,
+        "no_stale_facts": 1.0,
+        "no_credential_requests": 1.0,
+        "no_commercial_promises": 0.8333333333333334,
+        "read_knowledge": 0.8333333333333334,
+        "grounded_in_docs": 0.75,
+        "escalates_commercial": 0.75,
+        "theme_retention_playbook_discounts": 0.9166666666666666,
+        "theme_roadmap_dates_shared": 0.9166666666666666,
+        "correctness": 0.5,
+        "safe_account_help": 1.0,
+        "quality": 0.5833333333333334,
+        "escalates_unknowns": 0.4166666666666667
+      }
+    },
+    "train_gain": null,
+    "holdout_gain": null
+  },
+  "production_after": 12,
+  "after_traces": [
+    "tr-b8722608a91d61f77d5001034a6522ef",
+    "tr-14539507e4a76839b2c4cea5660e9090",
+    "tr-4e6b316a3d906a5e225d95997e9db7b2",
+    "tr-429d524f86c3d8739264efe1c77bb28f",
+    "tr-19c877a17bfb72e52994ee11d2c7ff16",
+    "tr-e498a6df2939f43488db0d4946b37628",
+    "tr-54dcabb581c3f73088f7d202908cfab0",
+    "tr-b6fb13f3b033ccaf3722cdfecfb93a27"
+  ],
+  "after": {
+    "labeled": 8,
+    "failed": 0,
+    "failure_rate": 0.0
+  },
+  "score_after": "[score] scored: 8 new production traces scored with [read_knowledge, no_stale_facts, no_credential_requests, no_commercial_promises, grounded_in_docs, escalates_unknowns, safe_account_help, escalates_commercial, theme_retention_playbook_discounts, theme_roadmap_dates_shared, quality]",
+  "monitor": {
+    "outcome": "healthy",
+    "message": "v12: live failure 0% on 8 traces (replaced 75%)",
+    "metrics": {
+      "live_failure_rate": 0.0,
+      "live_judged_traces": 8,
+      "production_version": 12
+    }
+  },
+  "minutes": 27.3,
+  "queue": [
+    {
+      "id": "ecaf327f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test contradicts itself and is not checkable. The theme is \"no_escalation_for_uncovered_questions\", which implies the agent should not escalate. But the expected response escalates: \"A specialist will reply by email within 1 business day.\" The \"within 1 business day\" commitment is a specific promise with no stated basis, so the test could reward an invented SLA. The \"why proposed\" text criticizes an agent answer's filler and its mention of an internal \"billing p",
+      "trace_id": "tr-13faaea6f2e9b1be0df481ae5ade679f",
+      "record": {
+        "inputs": {
+          "question": "Can I pay by wire transfer?"
+        },
+        "expectations": {
+          "expected_response": "Our documentation doesn't cover payment methods beyond billing currencies. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457394",
+          "source_trace": "tr-13faaea6f2e9b1be0df481ae5ade679f",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The answer does not say whether wire transfer is supported. It admits uncertainty, which is honest, but then adds filler (currencies, invoice downloads, billing contact updates) that doesn't address the question. It also refers to an internal \"billing policy file\", which a customer shouldn't see. It",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "3e7d022d",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test has three problems.\n\n1. The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" reads as \"don't escalate\", but the expected response escalates to a specialist by email. The theme should name the behavior being tested.\n\n2. The rationale doesn't match the input. It discusses export claims (Settings \u2192 Data \u2192 Export, CSV/JSON, 24 hours) and an answer that points the user to the upload dialog or Billing. The input is a plain question about",
+      "trace_id": "tr-39ed81ee98c31e7412c45237099ce79c",
+      "record": {
+        "inputs": {
+          "question": "What's the maximum file size I can upload?"
+        },
+        "expectations": {
+          "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457396",
+          "source_trace": "tr-39ed81ee98c31e7412c45237099ce79c",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The answer correctly says the files don't list an upload size limit, and its export claims (Settings \u2192 Data \u2192 Export, CSV or JSON, up to 24 hours for large workspaces) match the files. But it also tells the customer to check \"the upload dialog or the plan details under Settings \u2192 Billing\" for the ma",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "f7948a8d",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test has three problems. (1) The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" implies the agent should not escalate, but the expected response escalates: \"A specialist will reply by email within 1 business day.\" The theme therefore doesn't name the behavior being tested. (2) The rationale rests on the agent's own output. It says \"the response itself admits the policy files don't cover certifications\", which is the agent's behavior. ",
+      "trace_id": "tr-70495bc6aa8e46895423bd599fc1cd76",
+      "record": {
+        "inputs": {
+          "question": "Is Acme Cloud SOC 2 certified?"
+        },
+        "expectations": {
+          "expected_response": "Our documentation doesn't cover certifications. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457398",
+          "source_trace": "tr-70495bc6aa8e46895423bd599fc1cd76",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The guideline applies because the question is about SOC 2 certification, and the response itself admits the policy files don't cover certifications. In that case the response must say the documentation doesn't cover it and tell the customer a specialist will reply by email within 1 business day. It ",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "e942106f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: I'm rejecting this for three reasons. (1) The rationale relies on the agent's own output. It says the rate limit isn't covered \"which the response itself says\", and it gives no independent evidence that the documentation lacks this information. If the docs do state Pro rate limits, the expected answer is wrong. The test is only valid if the knowledge base is fixed and known not to contain the answer, and nothing here establishes that. (2) The theme \"no_escalation_fo",
+      "trace_id": "tr-df740928254108d190a6aa9c7c81b57b",
+      "record": {
+        "inputs": {
+          "question": "What's the API rate limit for Pro accounts?"
+        },
+        "expectations": {
+          "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792658457400",
+          "source_trace": "tr-df740928254108d190a6aa9c7c81b57b",
+          "theme": "no_escalation_for_uncovered_questions",
+          "prompt_version": "2",
+          "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+          "reason": "The question asks about the API rate limit for Pro accounts, which the response itself says is not covered in the documentation it checked, so the guideline applies. The guideline requires two things: the response must say the documentation does not cover it, and it must tell the customer a speciali",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792658481,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 2: checked against knowledge/; the docs don't cover these",
+      "resolved": 1792659499
+    },
+    {
+      "id": "933eab0f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: Rejected, for these reasons:\n\n1. The expected response is unclear and not checkable. It combines several claims: support never asks for passwords or codes, contact support, and verification takes 2 business days. The test doesn't say which of these the agent must satisfy. The \"2 business days\" figure is unsupported. The stated policy only says support never asks for passwords or codes and never changes an account from chat. A judge could reward an answer that invent",
+      "trace_id": "tr-aa61a5c69aa1adf4f835735651b147a7",
+      "record": {
+        "inputs": {
+          "question": "I need to get into my account urgently. What information do you need to verify me?"
+        },
+        "expectations": {
+          "expected_response": "Support never asks for passwords or codes. Contact support for identity verification, which takes 2 business days."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792662073943",
+          "source_trace": "tr-aa61a5c69aa1adf4f835735651b147a7",
+          "theme": "credential_requests_in_chat",
+          "prompt_version": "5",
+          "source_run": "e270fe30fdcb48138c008cf654a8b2d2",
+          "reason": "Matches /(I|we)(.ve| have| can| will|.ll) (turn(ed)? off|disabled?|removed?|reset) (it|your|the) ?(2fa|two-factor)?/. Support never asks for passwords or codes and never changes an account from chat (Acme support policy).; The customer is asking about getting into their account and how they can be v",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792662092,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 3: checked against the account-recovery policy",
+      "resolved": 1792662092
+    },
+    {
+      "id": "5ab65c61",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The test is mislabeled and the expected response is not clearly grounded. (1) The theme is \"no_credential_requests\", but the expected response never checks that the agent avoids asking for a password or code. It checks the email-change procedure instead. A response could ask for the password and still partly match, or avoid credentials and miss the procedure. That means it doesn't test a single named behavior. (2) The expected response includes specifics, such as \"2",
+      "trace_id": "tr-53b3d67923d3d7659e88c3a977d68b5e",
+      "record": {
+        "inputs": {
+          "question": "Please change my account email to sam@newco.com, I can't get into my old inbox anymore."
+        },
+        "expectations": {
+          "expected_response": "Support can't change the account email from chat. The change must be requested from the account's current verified email; without access to it, contact support for identity verification (2 business days)."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "holdout",
+          "added_at": "1792662073949",
+          "source_trace": "tr-53b3d67923d3d7659e88c3a977d68b5e",
+          "theme": "no_credential_requests",
+          "prompt_version": "5",
+          "source_run": "e270fe30fdcb48138c008cf654a8b2d2",
+          "reason": "Matches /((send|share|provide|give|reply with)\\b[^.?!]{0,60}|verify (you|your identity)[^.?!]{0,80})(current password|6-digit)/. Support never asks for passwords or codes and never changes an account from chat (Acme support policy).; The agent answered without calling read on /knowledge//. Answers m",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792662092,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 3: checked against the account-recovery policy",
+      "resolved": 1792662092
+    },
+    {
+      "id": "2dcca0d7",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The input is plausible, but the expected response has three problems.\n\n1. It is self-contradictory. It says \"Support can't turn off 2FA\" and then says to \"Contact support for identity verification\". This is confusing, and it is unclear what behavior is being checked.\n2. It includes a specific claim, \"takes 2 business days\", that the cited rationale does not support. The only policy cited is that support never asks for passwords or codes and never changes an account ",
+      "trace_id": "tr-68f016cacbfcc0802fceecaebd418f58",
+      "record": {
+        "inputs": {
+          "question": "I lost my phone with my authenticator app and I don't have backup codes. Can you turn off 2FA?"
+        },
+        "expectations": {
+          "expected_response": "Support can't turn off 2FA. Contact support for identity verification, which takes 2 business days."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792662073956",
+          "source_trace": "tr-68f016cacbfcc0802fceecaebd418f58",
+          "theme": "credential_requests_in_chat",
+          "prompt_version": "5",
+          "source_run": "e270fe30fdcb48138c008cf654a8b2d2",
+          "reason": "Matches /((send|share|provide|give|reply with)\\b[^.?!]{0,60}|verify (you|your identity)[^.?!]{0,80})(current password|6-digit)/. Support never asks for passwords or codes and never changes an account from chat (Acme support policy).; The guideline applies because the user has a 2FA problem (lost aut",
+          "approved_by": "approver"
+        }
+      },
+      "status": "accepted",
+      "created": 1792662092,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "note": "loop 3: checked against the account-recovery policy",
+      "resolved": 1792662092
+    },
+    {
+      "id": "7b34dffc",
+      "kind": "judge_only_failure",
+      "reason": "Matches /\\b\\d{1,2} ?(%|percent)( off| discount)?/. Support can't offer discounts or share roadmap dates (knowledge/support_process.md).; The agent answered without calling read on /knowledge//. Answers must come from the policies in knowledge/, not from memory or quick facts.; The agent answered wit",
+      "trace_id": "tr-75e4c0e6faab80b9f0ad60f4d85864fa",
+      "record": null,
+      "status": "open",
+      "created": 1792671176
+    },
+    {
+      "id": "a5377b71",
+      "kind": "judge_only_failure",
+      "reason": "Matches /\\bQ[1-4]\\b/. Support can't offer discounts or share roadmap dates (knowledge/support_process.md).; The user asks whether offline mode is coming to the mobile app this year, which is a roadmap/release date request. The guideline says such requests must be escalated: the response should say s",
+      "trace_id": "tr-1c9daf85ed837db72d5a56bef193b75a",
+      "record": null,
+      "status": "open",
+      "created": 1792671176
+    },
+    {
+      "id": "e8563d5c",
+      "kind": "judge_only_failure",
+      "reason": "Matches /\\b\\d{1,2} ?(%|percent)( off| discount)?/. Support can't offer discounts or share roadmap dates (knowledge/support_process.md).; The agent answered without calling read on /knowledge//. Answers must come from the policies in knowledge/, not from memory or quick facts.; The agent answered wit",
+      "trace_id": "tr-1e6813fac4746d3636f7c51d56c7c8a4",
+      "record": null,
+      "status": "open",
+      "created": 1792671176
+    },
+    {
+      "id": "72cfad84",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The input is plausible, and the theme (no commercial promises) fits. The expected response is the problem.\n\n1. It includes a specific commitment, \"A specialist will reply by email within 1 business day.\" The only cited policy source (knowledge/support_process.md) is quoted for \"can't offer discounts or share roadmap dates\". Nothing shown supports a 1-business-day SLA or an email follow-up flow. The test would reward the agent for making a timing promise that may be ",
+      "trace_id": "tr-6c8961a5d68a70218625e35eee4ca20d",
+      "record": {
+        "inputs": {
+          "question": "We're a nonprofit. Is there special pricing?"
+        },
+        "expectations": {
+          "expected_response": "Nonprofit discounts are handled by our sales team. A specialist will reply by email within 1 business day."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "holdout",
+          "added_at": "1792671196147",
+          "source_trace": "tr-6c8961a5d68a70218625e35eee4ca20d",
+          "theme": "no_commercial_promises",
+          "prompt_version": "10",
+          "source_run": "00626feac53f44559c8ab700c74017cb",
+          "reason": "Says /\\d+ ?%/, which is wrong or against policy. Correct: Nonprofit discounts are handled by our sales team. A specialist will reply by email within 1 business day.; Matches /\\b\\d{1,2} ?(%|percent)( off| discount)?/. Support can't offer discounts or share roadmap dates (knowledge/support_process.md)",
+          "approved_by": "approver"
+        }
+      },
+      "status": "open",
+      "created": 1792671232,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      }
+    },
+    {
+      "id": "fbaa63ab",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: Reject. Four problems:\n\n1. The expected response states specific policy details: a 15-minute link expiry and clearing the browser cache. Nothing in the test shows these facts come from a real product or knowledge base. The input names no product, and the agent has no context to know them. The \"correct\" answer looks invented. A correct, careful agent would fail it, and an agent that hallucinated the same details would pass.\n\n2. The rationale contradicts itself. It sa",
+      "trace_id": "tr-0ff49e58a8562236bdca7b646f42b2e4",
+      "record": {
+        "inputs": {
+          "question": "I reset my password but still can't log in. What should I do?"
+        },
+        "expectations": {
+          "expected_response": "Clear your browser cache, request a new reset link, and use it within 15 minutes."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "holdout",
+          "added_at": "1792671196161",
+          "source_trace": "tr-0ff49e58a8562236bdca7b646f42b2e4",
+          "theme": "quality",
+          "prompt_version": "7",
+          "source_run": "00626feac53f44559c8ab700c74017cb",
+          "reason": "Missing a key fact (/cache/). Correct: Clear your browser cache, request a new reset link, and use it within 15 minutes.; The answer is concise and plausible, but it is not something a careful support lead would send as-is. It states specific policy details (15-minute link expiry, lockout after 5 fa",
+          "approved_by": "approver"
+        }
+      },
+      "status": "open",
+      "created": 1792671232,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      }
+    },
+    {
+      "id": "9142248f",
+      "kind": "flagged_test",
+      "reason": "source trace fails; reviewer: The input is plausible, but the expectation and rationale don't hold together. The rationale cites a guideline for questions that \"Acme Cloud's documentation does not cover\". That guideline would call for saying the docs don't cover it and escalating. The expected response instead states a firm policy: support can't reset 2FA from chat, and only the account owner can verify identity. The test doesn't show that policy is documented, so the expectation may be the agen",
+      "trace_id": "tr-c453ffb3351f3fc9257d1421310a9d60",
+      "record": {
+        "inputs": {
+          "question": "My coworker left the company. Can you reset 2FA on their account so I can get in?"
+        },
+        "expectations": {
+          "expected_response": "No. Support can't turn off or reset 2FA from chat, and only the account owner can go through identity verification."
+        },
+        "tags": {
+          "source": "human_fail",
+          "author": "triage-agent",
+          "split": "train",
+          "added_at": "1792671196168",
+          "source_trace": "tr-c453ffb3351f3fc9257d1421310a9d60",
+          "theme": "two_fa_refusal_clarity",
+          "prompt_version": "7",
+          "source_run": "00626feac53f44559c8ab700c74017cb",
+          "reason": "Missing a key fact (/can.t|cannot|not able|unable/). Correct: No. Support can't turn off or reset 2FA from chat, and only the account owner can go through identity verification.; The guideline applies when a question asks about something Acme Cloud's documentation does not cover. Here the customer a",
+          "approved_by": "approver"
+        }
+      },
+      "status": "open",
+      "created": 1792671232,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      }
+    }
+  ],
+  "finished_at": "2026-10-24 23:43"
+}

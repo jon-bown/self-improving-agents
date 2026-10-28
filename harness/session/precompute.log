@@ -1,0 +1,294 @@
+2026/10/22 04:11:39 INFO mlflow.tracking.fluent: Experiment with name 'acme-openclaw' does not exist. Creating a new experiment.
+openclaw      isolated profile harness/session/.state/openclaw is valid
+mlflow plugin installed in the isolated profile, exporting to experiment 1
+-- init: AGENTS.md v1 -> production, golden cases -> dataset
+2026/10/22 04:11:55 INFO mlflow.store.model_registry.abstract_store: Waiting up to 300 seconds for prompt version to finish creation. Prompt name: acme-agents-md, version 1
+
+======== loop 1: Manual: the agent skips the lookup ========
+-- signal: loop 1 traffic, scored and labeled
+   before How long do I have to request a refund?
+   before I bought the annual plan three weeks ago. Can I still get a refund?
+   before My password reset link from this morning isn't working. Why?
+   before How long am I locked out after too many wrong passwords?
+   before How many teammates can I invite on the Pro plan?
+   before What happens if my card payment fails?
+   before How do I export my data, and in what formats?
+   before Can I change the email address my invoices go to?
+2026/10/22 04:16:14 INFO mlflow.models.evaluation.utils.trace: Auto tracing is temporarily enabled during the model evaluation for computing some metrics and debugging. To disable tracing, call `mlflow.autolog(disable=True)`.
+
+Evaluating:   0%|          | 0/8 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  12%|█▎        | 1/8 [Elapsed: 00:05, Remaining: 00:37]
+Evaluating:  25%|██▌       | 2/8 [Elapsed: 00:05, Remaining: 00:16]
+Evaluating:  38%|███▊      | 3/8 [Elapsed: 00:05, Remaining: 00:09]
+Evaluating:  50%|█████     | 4/8 [Elapsed: 00:05, Remaining: 00:05]
+Evaluating:  75%|███████▌  | 6/8 [Elapsed: 00:06, Remaining: 00:02]
+Evaluating: 100%|██████████| 8/8 [Elapsed: 00:07, Remaining: 00:00]
+Evaluating: 100%|██████████| 8/8 [Elapsed: 00:07, Remaining: 00:00] [predict_fn: 0%, scorers: 100%]
+Evaluating: 100%|██████████| 8/8 [Elapsed: 00:07, Remaining: 00:00] [predict_fn: 0%, scorers: 100%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mscore 2026-10-22 04:16:04[0m
+  Run ID: [94ma65e01f0101e43368db15edf5745d55b[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=a65e01f0101e43368db15edf5745d55b[0m
+
+[score] scored: 8 new production traces scored with [read_knowledge, no_stale_facts, quality]
+-- store: labeled failures -> tests (by hand)
+-- update: v2 written by a person
+2026/10/22 04:16:23 INFO mlflow.store.model_registry.abstract_store: Waiting up to 300 seconds for prompt version to finish creation. Prompt name: acme-agents-md, version 2
+2026/10/22 04:16:23 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/4 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  25%|██▌       | 1/4 [Elapsed: 00:29, Remaining: 01:28]
+Evaluating:  50%|█████     | 2/4 [Elapsed: 00:56, Remaining: 00:56]
+Evaluating:  75%|███████▌  | 3/4 [Elapsed: 01:25, Remaining: 00:28]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:54, Remaining: 00:00]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:54, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:54, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mtrain/baseline[0m
+  Run ID: [94m50e3a64d9d044eb8b6aa8a128dfa3a64[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=50e3a64d9d044eb8b6aa8a128dfa3a64[0m
+
+2026/10/22 04:18:47 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/4 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  25%|██▌       | 1/4 [Elapsed: 00:31, Remaining: 01:33]
+Evaluating:  50%|█████     | 2/4 [Elapsed: 01:00, Remaining: 01:00]
+Evaluating:  75%|███████▌  | 3/4 [Elapsed: 01:26, Remaining: 00:28]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:55, Remaining: 00:00]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:55, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 01:55, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mtrain/candidate[0m
+  Run ID: [94mfca0ee6b3980468c811b36b45280c2c7[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=fca0ee6b3980468c811b36b45280c2c7[0m
+
+2026/10/22 04:21:11 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/11 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   9%|▉         | 1/11 [Elapsed: 00:31, Remaining: 05:11]
+Evaluating:  18%|█▊        | 2/11 [Elapsed: 00:57, Remaining: 04:19]
+Evaluating:  27%|██▋       | 3/11 [Elapsed: 01:24, Remaining: 03:45]
+Evaluating:  36%|███▋      | 4/11 [Elapsed: 01:49, Remaining: 03:11]
+Evaluating:  45%|████▌     | 5/11 [Elapsed: 02:17, Remaining: 02:45]
+Evaluating:  55%|█████▍    | 6/11 [Elapsed: 02:43, Remaining: 02:16]
+Evaluating:  64%|██████▎   | 7/11 [Elapsed: 03:11, Remaining: 01:49]
+Evaluating:  73%|███████▎  | 8/11 [Elapsed: 03:42, Remaining: 01:23]
+Evaluating:  82%|████████▏ | 9/11 [Elapsed: 04:08, Remaining: 00:55]
+Evaluating:  91%|█████████ | 10/11 [Elapsed: 04:35, Remaining: 00:27]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:01, Remaining: 00:00]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:01, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:01, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mholdout/baseline[0m
+  Run ID: [94m17ab40d3989e4c4cb02fae3b9fc298fc[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=17ab40d3989e4c4cb02fae3b9fc298fc[0m
+
+2026/10/22 04:26:40 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/11 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   9%|▉         | 1/11 [Elapsed: 00:33, Remaining: 05:31]
+Evaluating:  18%|█▊        | 2/11 [Elapsed: 01:02, Remaining: 04:43]
+Evaluating:  27%|██▋       | 3/11 [Elapsed: 01:26, Remaining: 03:51]
+Evaluating:  36%|███▋      | 4/11 [Elapsed: 01:54, Remaining: 03:21]
+Evaluating:  45%|████▌     | 5/11 [Elapsed: 02:27, Remaining: 02:57]
+Evaluating:  55%|█████▍    | 6/11 [Elapsed: 02:58, Remaining: 02:28]
+Evaluating:  64%|██████▎   | 7/11 [Elapsed: 03:25, Remaining: 01:57]
+Evaluating:  73%|███████▎  | 8/11 [Elapsed: 03:55, Remaining: 01:28]
+Evaluating:  82%|████████▏ | 9/11 [Elapsed: 04:23, Remaining: 00:58]
+Evaluating:  91%|█████████ | 10/11 [Elapsed: 04:52, Remaining: 00:29]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:20, Remaining: 00:00]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:20, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:20, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mholdout/candidate[0m
+  Run ID: [94m281e72bfe79d4db28f9dace0c5c5b6d8[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=281e72bfe79d4db28f9dace0c5c5b6d8[0m
+
+🏃 View run gate: v2 vs v1 at: http://127.0.0.1:19560/#/experiments/1/runs/14799d4cf59845238f1c64a1823c6a93
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+scorer                         train/baseline    train/candidate   holdout/baseline  holdout/candidate
+correctness                                0%               100%                 0%                73%
+has_key_facts                            100%               100%                36%               100%
+no_stale_facts                            25%               100%                27%               100%
+quality                                    0%                50%                 9%                45%
+read_knowledge                             0%               100%                 0%                91%
+OVERALL                                   25%                90%                15%                82%
+[gate] awaiting_approval: v2 passed; run `selfimprove promote 2` to ship it
+🏃 View run gate 2026-10-22 04:16:23 at: http://127.0.0.1:19560/#/experiments/1/runs/575e15afb4f44cb6a83dbcecd0d821c2
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+[promote] promoted: v1 -> v2
+🏃 View run promote 2026-10-22 04:32:32 at: http://127.0.0.1:19560/#/experiments/1/runs/78482fe3f66d432eb0a25d0b3adc0563
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+-- after: loop 1 traffic on v2
+   after  How long do I have to request a refund?
+   after  I bought the annual plan three weeks ago. Can I still get a refund?
+   after  My password reset link from this morning isn't working. Why?
+   after  How long am I locked out after too many wrong passwords?
+   after  How many teammates can I invite on the Pro plan?
+   after  What happens if my card payment fails?
+   after  How do I export my data, and in what formats?
+   after  Can I change the email address my invoices go to?
+   failure rate 88% -> 0%
+== loop 1 saved: harness/session/store/results/loop1.json
+
+======== loop 2: Assisted: the agent improvises when the docs are silent ========
+-- signal: loop 2 traffic, scored and labeled
+   before What's the API rate limit for Pro accounts?
+   before Do you sign HIPAA BAAs?
+   before Which data center region is my workspace stored in?
+   before Is Acme Cloud SOC 2 certified?
+   before What's the maximum file size I can upload?
+   before Can I pay by wire transfer?
+   before Does Acme Cloud integrate with Jira?
+   before Can I use offline mode in the browser?
+
+Evaluating:   0%|          | 0/16 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   6%|▋         | 1/16 [Elapsed: 00:03, Remaining: 00:58]
+Evaluating:  12%|█▎        | 2/16 [Elapsed: 00:06, Remaining: 00:43]
+Evaluating:  25%|██▌       | 4/16 [Elapsed: 00:06, Remaining: 00:19]
+Evaluating:  38%|███▊      | 6/16 [Elapsed: 00:06, Remaining: 00:11]
+Evaluating:  50%|█████     | 8/16 [Elapsed: 00:06, Remaining: 00:06]
+Evaluating:  69%|██████▉   | 11/16 [Elapsed: 00:06, Remaining: 00:03]
+Evaluating:  88%|████████▊ | 14/16 [Elapsed: 00:07, Remaining: 00:01]
+Evaluating: 100%|██████████| 16/16 [Elapsed: 00:09, Remaining: 00:00] [predict_fn: 0%, scorers: 100%]
+Evaluating: 100%|██████████| 16/16 [Elapsed: 00:09, Remaining: 00:00] [predict_fn: 0%, scorers: 100%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mscore 2026-10-22 04:40:31[0m
+  Run ID: [94m8a5f3189ecc54b53aeded90c070fa570[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=8a5f3189ecc54b53aeded90c070fa570[0m
+
+[score] scored: 16 new production traces scored with [read_knowledge, no_stale_facts, grounded_in_docs, escalates_unknowns, quality]
+-- store: triage + approve
+[triage] proposed: 4 tests in 3 themes from 16 traces, 0 already covered (proposal on run fbe6cd0f)
+🏃 View run triage 2026-10-22 04:40:43 at: http://127.0.0.1:19560/#/experiments/1/runs/fbe6cd0f86364f3b90648b7211dee5dd
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+
+Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]
+Downloading artifacts: 100%|██████████| 1/1 [00:00<00:00, 211.15it/s]
+Downloading artifacts: 100%|██████████| 1/1 [00:00<00:00, 204.84it/s]
+[approve] merged: 0 tests merged, 4 sent to the human queue, theme judges []; dataset now 15 records (4 train, 11 holdout) by source {'golden': 8, 'human_fail': 7}
+🏃 View run approve 2026-10-22 04:40:57 at: http://127.0.0.1:19560/#/experiments/1/runs/cd7300ee17a94ee9a0a01938947a8e65
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+-- update: the analyst
+2026/10/22 04:41:44 INFO mlflow.store.model_registry.abstract_store: Waiting up to 300 seconds for prompt version to finish creation. Prompt name: acme-agents-md, version 3
+[improve] candidate: v3 from analyst (10 failures, 4 train rows): Removed the instruction to invent plausible SaaS specifics and never admit gaps. Replaced it with a rule to stick to the files and use a fixed escalation line (docs don't cover it; specialist replies 
+🏃 View run improve 2026-10-22 04:41:21 at: http://127.0.0.1:19560/#/experiments/1/runs/f59d90c46eb94d2abadce106273a5d1a
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+2026/10/22 04:41:44 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/4 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  25%|██▌       | 1/4 [Elapsed: 00:34, Remaining: 01:43]
+Evaluating:  50%|█████     | 2/4 [Elapsed: 01:06, Remaining: 01:06]
+Evaluating:  75%|███████▌  | 3/4 [Elapsed: 01:40, Remaining: 00:33]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:08, Remaining: 00:00]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:08, Remaining: 00:00] [predict_fn: 96%, scorers: 4%]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:08, Remaining: 00:00] [predict_fn: 96%, scorers: 4%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mtrain/baseline[0m
+  Run ID: [94mdb9441889a344802bb9eda4730f76468[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=db9441889a344802bb9eda4730f76468[0m
+
+2026/10/22 04:44:22 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/4 [Elapsed: 00:00, Remaining: ?]
+Evaluating:  25%|██▌       | 1/4 [Elapsed: 00:38, Remaining: 01:54]
+Evaluating:  50%|█████     | 2/4 [Elapsed: 01:04, Remaining: 01:04]
+Evaluating:  75%|███████▌  | 3/4 [Elapsed: 01:32, Remaining: 00:30]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:01, Remaining: 00:00]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:01, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+Evaluating: 100%|██████████| 4/4 [Elapsed: 02:01, Remaining: 00:00] [predict_fn: 95%, scorers: 5%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mtrain/candidate[0m
+  Run ID: [94mb004d1ca5203413380b5e73bdae05c90[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=b004d1ca5203413380b5e73bdae05c90[0m
+
+2026/10/22 04:46:52 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/11 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   9%|▉         | 1/11 [Elapsed: 00:33, Remaining: 05:37]
+Evaluating:  18%|█▊        | 2/11 [Elapsed: 01:02, Remaining: 04:41]
+Evaluating:  27%|██▋       | 3/11 [Elapsed: 01:32, Remaining: 04:05]
+Evaluating:  36%|███▋      | 4/11 [Elapsed: 01:58, Remaining: 03:28]
+Evaluating:  45%|████▌     | 5/11 [Elapsed: 02:27, Remaining: 02:56]
+Evaluating:  55%|█████▍    | 6/11 [Elapsed: 03:00, Remaining: 02:30]
+Evaluating:  64%|██████▎   | 7/11 [Elapsed: 03:24, Remaining: 01:56]
+Evaluating:  73%|███████▎  | 8/11 [Elapsed: 03:54, Remaining: 01:27]
+Evaluating:  82%|████████▏ | 9/11 [Elapsed: 04:21, Remaining: 00:58]
+Evaluating:  91%|█████████ | 10/11 [Elapsed: 04:48, Remaining: 00:28]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:16, Remaining: 00:00]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:16, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:16, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mholdout/baseline[0m
+  Run ID: [94maff03c90ebb0476e8861da9dd82e12c3[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=aff03c90ebb0476e8861da9dd82e12c3[0m
+
+2026/10/22 04:52:39 INFO mlflow.genai.utils.data_validation: Testing model prediction with the first sample in the dataset. To disable this check, set the MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION environment variable to True.
+
+Evaluating:   0%|          | 0/11 [Elapsed: 00:00, Remaining: ?]
+Evaluating:   9%|▉         | 1/11 [Elapsed: 00:30, Remaining: 05:07]
+Evaluating:  18%|█▊        | 2/11 [Elapsed: 00:59, Remaining: 04:26]
+Evaluating:  27%|██▋       | 3/11 [Elapsed: 01:27, Remaining: 03:52]
+Evaluating:  36%|███▋      | 4/11 [Elapsed: 01:56, Remaining: 03:23]
+Evaluating:  45%|████▌     | 5/11 [Elapsed: 02:26, Remaining: 02:56]
+Evaluating:  55%|█████▍    | 6/11 [Elapsed: 02:50, Remaining: 02:21]
+Evaluating:  64%|██████▎   | 7/11 [Elapsed: 03:18, Remaining: 01:53]
+Evaluating:  73%|███████▎  | 8/11 [Elapsed: 03:47, Remaining: 01:25]
+Evaluating:  82%|████████▏ | 9/11 [Elapsed: 04:15, Remaining: 00:56]
+Evaluating:  91%|█████████ | 10/11 [Elapsed: 04:42, Remaining: 00:28]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:08, Remaining: 00:00]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:08, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+Evaluating: 100%|██████████| 11/11 [Elapsed: 05:08, Remaining: 00:00] [predict_fn: 98%, scorers: 2%]
+
+✨ Evaluation completed.
+
+Metrics and evaluation results are logged to the MLflow run:
+  Run name: [94mholdout/candidate[0m
+  Run ID: [94mee93bd37e80d4d7dbd1fcc56ff4bc6bb[0m
+View the evaluation results at [93mhttp://127.0.0.1:19560/#/experiments/1/evaluation-runs?selectedRunUuid=ee93bd37e80d4d7dbd1fcc56ff4bc6bb[0m
+
+🏃 View run gate: v3 vs v2 at: http://127.0.0.1:19560/#/experiments/1/runs/c955365a4c4c4640bfbda91560a70709
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+scorer                         train/baseline    train/candidate   holdout/baseline  holdout/candidate
+correctness                              100%                50%                73%                55%
+escalates_unknowns                       100%                75%                36%                45%
+grounded_in_docs                          75%                50%                64%                82%
+has_key_facts                            100%               100%               100%                91%
+no_stale_facts                           100%               100%               100%               100%
+quality                                   25%                25%                64%                73%
+read_knowledge                           100%               100%                91%                91%
+OVERALL                                   86%                71%                75%                77%
+[gate] rejected: gate FAIL: v3 vs v2 -- train: worse than production (-14%)
+🏃 View run gate 2026-10-22 04:41:44 at: http://127.0.0.1:19560/#/experiments/1/runs/29b9bba9d6634e9fa622889a441cb3b4
+🧪 View experiment at: http://127.0.0.1:19560/#/experiments/1
+   queue: a person accepted 4 flagged tests; 19 records (8 train, 11 holdout) by source {'golden': 8, 'human_fail': 7, 'queue': 4}
+== loop 2 saved: harness/session/store/results/loop2.json
+loop 2 did not ship a new version; stopping. Re-run with --loops 2 ...
+2026/10/22 04:58:19 INFO mlflow.tracing.export.async_export_queue: Flushing the async trace logging queue before program exit. This may take a while...

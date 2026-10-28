@@ -2,11 +2,7 @@
 __pycache__/
 *.egg-info/
 .env
-mlflow.db
-mlruns/
-mlartifacts/
-.workspaces/
-.openclaw-state/
-proposals/
 .pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 .DS_Store

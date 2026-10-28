@@ -1,0 +1,19 @@
+# The selfimprove harness, offline: the whole loop through the CLI with the example agent's
+# rule-based stand-in. No API keys. Proves the loop mechanics on every change to harness/.
+name: selfimprove-offline
+on:
+  push:
+    paths: ["harness/**", ".github/workflows/selfimprove-*.yml"]
+  pull_request:
+    paths: ["harness/**", ".github/workflows/selfimprove-*.yml"]
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+      - run: .venv/bin/python -m pytest tests -q

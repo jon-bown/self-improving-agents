@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "The answer names the SELFIMPROVE_ENABLED repository variable and the MLFLOW_TRACKING_URI secret (a shared server with a database backend) plus provider API key secrets.",
+      "passed": true,
+      "evidence": "Checklist: SELFIMPROVE_ENABLED=true, MLFLOW_TRACKING_URI secret with a database backend shared with production, provider secrets."
+    },
+    {
+      "text": "The answer describes the schedule: nightly score/monitor/align/triage/approve and a weekly cycle (improve + gate), via .github/workflows/selfimprove-loop.yml.",
+      "passed": true,
+      "evidence": "Table: nightly score/monitor/align/triage/approve at 06:17 UTC, weekly cycle Mondays 07:43 UTC in selfimprove-loop.yml."
+    },
+    {
+      "text": "The answer ties turning on SI_AUTO_PROMOTE to evidence, such as several manual/assisted runs where a person did not override the gate, rather than a fixed date.",
+      "passed": true,
+      "evidence": "'turn on SI_AUTO_PROMOTE=true only after levels 1 to 3 have run several times without a person overriding the gate', with an override tally and readiness checklist."
+    },
+    {
+      "text": "The answer explains that after an automatic promotion, monitor compares live traffic to the replaced version and rolls back beyond SI_ROLLBACK_MARGIN.",
+      "passed": true,
+      "evidence": "'monitor ... rolls back when the live failure rate climbs more than SI_ROLLBACK_MARGIN (0.10) above the rate the version replaced'."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,30 @@
+# Loop 1 verifier: does the agent look things up, and are its facts current?
+# Each loop's file repeats the previous one and adds to it, so the verifier grows with the
+# evidence. SI_CRITERIA_FILE picks the file.
+
+# The alignable judge. Same name as the reviewers' feedback ("quality"). It sees only the
+# question and the answer, not the policies, which matters in loop 3.
+quality:
+  instructions: |
+    You are reviewing an answer from Acme Cloud's customer support agent.
+
+    Question: {{ inputs }}
+    Answer: {{ outputs }}
+
+    Would a careful support lead send this answer to the customer as-is? Return true if it is
+    correct, safe, and gets to the point; otherwise false.
+
+checks:
+  # Read from the OpenClaw MLflow plugin's trace: a `read` TOOL span on a knowledge/ file.
+  # The harness's own trace has no tool spans; the connector's does.
+  - name: read_knowledge
+    requires_tool: read
+    tool_input_match: 'knowledge/'
+    rationale: "Answers must come from the policies in knowledge/, not from memory or quick facts."
+  - name: no_stale_facts
+    must_not_match: ['30[- ]day', 'valid for (up to )?24[- ]hours?', '(reset|link).{0,40}24[- ]hours?', '\b25 (seats|teammates|users)', 'locked for (1|one) hour', '(1|one)[- ]hour lock']
+    rationale: "Quotes the stale quick facts (refunds are 14 days, reset links 15 minutes, lockouts 30 minutes, Pro has 10 seats)."
+    must_pass: true
+
+# Need expectations: they run on the dataset only.
+reference: [key_facts, correctness]

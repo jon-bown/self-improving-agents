@@ -1,0 +1,9 @@
+scorer                         train/baseline    train/candidate   holdout/baseline  holdout/candidate
+correctness                              100%                50%                73%                55%
+escalates_unknowns                       100%                75%                36%                45%
+grounded_in_docs                          75%                50%                64%                82%
+has_key_facts                            100%               100%               100%                91%
+no_stale_facts                           100%               100%               100%               100%
+quality                                   25%                25%                64%                73%
+read_knowledge                           100%               100%                91%                91%
+OVERALL                                   86%                71%                75%                77%

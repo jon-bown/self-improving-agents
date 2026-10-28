@@ -1,0 +1,64 @@
+{
+  "verdicts": [
+    {
+      "triage_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+      "input": "Can I pay by wire transfer?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The test contradicts itself and is not checkable. The theme is \"no_escalation_for_uncovered_questions\", which implies the agent should not escalate. But the expected response escalates: \"A specialist will reply by email within 1 business day.\" The \"within 1 business day\" commitment is a specific promise with no stated basis, so the test could reward an invented SLA. The \"why proposed\" text criticizes an agent answer's filler and its mention of an internal \"billing policy file\". That is a different behavior from the one the theme names, and the text is cut off. It is unclear whether the test targets honesty about uncertainty, leaking internal files, filler, or escalation. A test should check one behavior. The expected response also says the documentation covers \"billing currencies\", which is odd and probably copied from the agent's own output instead of an independent rationale. The input is plausible, but the expectation and theme need to be reconciled and narrowed to one behavior before this can be approved."
+      ]
+    },
+    {
+      "triage_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+      "input": "What's the maximum file size I can upload?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The test has three problems.\n\n1. The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" reads as \"don't escalate\", but the expected response escalates to a specialist by email. The theme should name the behavior being tested.\n\n2. The rationale doesn't match the input. It discusses export claims (Settings \u2192 Data \u2192 Export, CSV/JSON, 24 hours) and an answer that points the user to the upload dialog or Billing. The input is a plain question about maximum upload size. The test looks stitched together from a different case, so I can't confirm the expected response is grounded in the reviewers' reasoning.\n\n3. The expected response contains a specific commitment, \"within 1 business day\", with no evidence in the rationale that the documentation supports it. The rationale's actual concern is that the agent invented places to look for the limit. The test should say that directly: it should check that the agent doesn't fabricate a limit or UI locations, and that it states the info isn't documented. A rigid verbatim-style answer is a brittle way to check this.\n\nRevise the theme and rationale so they are consistent. Also make the expectation state the checkable behavior: no invented size or location, and an acknowledgment that the info is missing, plus the escalation only if that policy is documented."
+      ]
+    },
+    {
+      "triage_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+      "input": "Is Acme Cloud SOC 2 certified?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: The test has three problems. (1) The theme contradicts the expectation. \"no_escalation_for_uncovered_questions\" implies the agent should not escalate, but the expected response escalates: \"A specialist will reply by email within 1 business day.\" The theme therefore doesn't name the behavior being tested. (2) The rationale rests on the agent's own output. It says \"the response itself admits the policy files don't cover certifications\", which is the agent's behavior. It doesn't cite an independent reviewer rationale or a documented guideline. Nothing shows that the docs really omit SOC 2, or that this escalation wording is required. (3) The rationale is truncated, so the justification is incomplete and can't be checked. The expectation is also a single fixed string, \"1 business day\" included, and it isn't clear which parts are mandatory: the admission, the email follow-up, or the exact timeframe. That makes grading ambiguous. The input itself is plausible, but the test needs a consistent theme, a grounded guideline, and clearly stated required elements."
+      ]
+    },
+    {
+      "triage_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+      "input": "What's the API rate limit for Pro accounts?",
+      "approved": false,
+      "checks": {
+        "reproduces_failure": true,
+        "not_near_duplicate": true,
+        "under_theme_cap": true,
+        "reviewer_agent": false
+      },
+      "reasons": [
+        "source trace fails",
+        "reviewer: I'm rejecting this for three reasons. (1) The rationale relies on the agent's own output. It says the rate limit isn't covered \"which the response itself says\", and it gives no independent evidence that the documentation lacks this information. If the docs do state Pro rate limits, the expected answer is wrong. The test is only valid if the knowledge base is fixed and known not to contain the answer, and nothing here establishes that. (2) The theme \"no_escalation_for_uncovered_questions\" contradicts the expectation. The expected response escalates to a specialist, but the theme reads as if the agent should not escalate. That makes the intended behavior unclear. (3) The expected response is a verbatim canned string, including a specific \"1 business day\" commitment, and the rationale is cut off. The criteria need to be stated clearly: the response says the docs don't cover it, and it says a specialist will follow up. It should also say whether the exact timeframe and email channel are required. As written, a judge could reward either a loose paraphrase or only an exact match. Fix the theme name, ground the 'not in docs' premise in the fixed documentation, and state the required elements explicitly."
+      ]
+    }
+  ]
+}

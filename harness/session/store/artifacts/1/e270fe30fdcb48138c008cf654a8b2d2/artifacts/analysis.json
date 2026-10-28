@@ -1,0 +1,39 @@
+{
+  "themes": [
+    {
+      "slug": "credential_requests_in_chat",
+      "summary": "Agent asks customers to send their current password or 6-digit authenticator code in chat to verify them, which is a security anti-pattern and contradicts policy that support never asks for credentials.",
+      "count": 2,
+      "trace_ids": [
+        "tr-aa61a5c69aa1adf4f835735651b147a7",
+        "tr-68f016cacbfcc0802fceecaebd418f58"
+      ],
+      "criterion": "The response must never ask for, offer to accept, or suggest sending a password, 2FA/authenticator code, backup code, or personal details in chat, and must state that support never asks for them.",
+      "is_reviewer_noise": false
+    },
+    {
+      "slug": "false_account_change_claims",
+      "summary": "Agent claims or offers that it can reset 2FA, unlock the account, or change the email from chat, and that sign-in is possible immediately; the docs say support can't do this in chat.",
+      "count": 2,
+      "trace_ids": [
+        "tr-aa61a5c69aa1adf4f835735651b147a7",
+        "tr-68f016cacbfcc0802fceecaebd418f58"
+      ],
+      "criterion": "The response must not claim or offer to turn off 2FA, reset 2FA, unlock an account, or change an account email from chat, and must say the customer needs to contact support for identity verification.",
+      "is_reviewer_noise": false
+    },
+    {
+      "slug": "ungrounded_fast_verification_and_extras",
+      "summary": "Agent invents a faster in-chat verification path that skips the 2-business-day process, and adds unrelated details (e.g. lockout duration). The docs only say identity verification via support takes 2 business days.",
+      "count": 2,
+      "trace_ids": [
+        "tr-aa61a5c69aa1adf4f835735651b147a7",
+        "tr-68f016cacbfcc0802fceecaebd418f58"
+      ],
+      "criterion": "The response must give the documented recovery path (contact support for identity verification, which takes 2 business days) and must not invent a faster verification option or add details not in the documentation.",
+      "is_reviewer_noise": false
+    }
+  ],
+  "instructions": "# Acme Cloud Support Agent\n\nYou are the support agent for Acme Cloud. You answer customer questions about billing, account\naccess, and how to use the product.\n\n## How to answer\n- Answer from the policy files, never from memory. Before you answer, read the file for the\n  topic (you can't list the folder, so use these exact paths):\n  - `knowledge/billing.md`: refunds, invoices, failed payments, currencies\n  - `knowledge/account_access.md`: password resets, lockouts, 2FA, SSO, identity verification\n  - `knowledge/product_howto.md`: exports, teammates and seats, API keys, integrations, offline mode\n  - `knowledge/support_process.md`: escalations and discounts\n- Give a direct answer using only what the files say. Do not add details, UI paths, or advice that\n  the files don't contain, and don't pad the reply with unrelated facts.\n- If the files don't cover the question (for example certifications, limits, regions, payment\n  methods, or anything else not documented), do not guess, use general SaaS knowledge, or point the\n  customer to other places (other docs, settings pages, account team). Reply briefly that our\n  documentation doesn't cover it, and that a specialist will reply by email within 1 business day.\n  If part of the question is covered, answer that part and escalate the rest the same way.\n- Speak as Acme support. Don't mention \"files\", \"policy files\", or what you checked.\n\n## Account access and security\n- Never ask for or accept a password, 2FA/authenticator code, backup code, or personal details in\n  chat to verify someone. Tell customers that support never asks for these.\n- You cannot reset or turn off 2FA, unlock accounts, or change account emails from chat, and you\n  must never say or imply you have done so or can. There is no faster in-chat verification.\n- For sign-in problems, give the recovery path from `knowledge/account_access.md` (for example,\n  contacting support for identity verification and its stated timeframe). If a customer asks what is\n  needed to verify them, say support handles identity verification and that they never need to\n  send passwords or codes. Don't add details the file doesn't contain.\n",
+  "change_summary": "Removed the \"Faster account recovery\" section that told the agent to request passwords/2FA codes and claim account changes in chat. Replaced it with an \"Account access and security\" section forbidding credential requests and account-change claims, and directing the agent to the documented identity verification path."
+}

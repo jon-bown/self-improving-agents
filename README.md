@@ -1,10 +1,10 @@
-# Build Your Own Self-Improving Agent with OpenClaw and MLflow
+# Self-Improving Agents with MLflow & OpenClaw
 
-Companion repo for the ODSC West 2026 tutorial and the *Self-Improvement & MLflow* blog series.
+Companion repo for my talk at **ODSC AI West 2026**, *Build Your Own Self-Improving Agent with
+OpenClaw and MLflow*, and for the [*Self-Improvement & MLflow* blog series](#the-blog-series).
 
-An [OpenClaw](https://github.com/openclaw/openclaw) support agent for a fictional product, Acme Cloud, goes from
-"a person reads traces and edits a prompt" to "the loop notices a problem, fixes it, proves the fix,
-and ships it unattended". Along the way MLflow provides the traces, the signal, the store, and the gate.
+Every part of this repo runs the same loop, with MLflow providing the traces, the signal, the
+store, and the gate:
 
 ```
         ┌────────── signal ──────────┐      ┌──── store ────┐      ┌───── update ─────┐
@@ -14,194 +14,128 @@ traces ─┤ human feedback / expectations├─────▶ eval dataset  �
                                               └───────────────┘      └──────────────────┘
 ```
 
-## The levels
+## The blog series
 
-Every level runs the same loop. Two things change: **who writes the candidate** and **who approves it**.
+The harness follows these posts on ODSC's blog:
 
-| Level | Folder | Who writes the change | Who promotes | MLflow pieces introduced |
-|---|---|---|---|---|
-| 0 | `level0_instrument` | – | – | Prompt Registry, tracing, `update_current_trace` tags |
-| 1 | `level1_signal` | – | – | `log_feedback` / `log_expectation`, label schemas + review queues, `@scorer`, `Guidelines`, `make_judge`, `evaluate()` on existing traces |
-| 2 | `level2_manual_loop` | a person | a person | evaluation datasets, side-by-side `evaluate()`, `@mlflow.test` regression suite, alias promotion |
-| 3 | `level3_agent_assisted` | an LLM trace analyst | a person (reviews a proposal) | scorer registry (theme judges grow with evidence), `mlflow agent setup` skills |
-| 4 | `level4_optimizer` | GEPA (`optimize_prompts`) | a person | judge alignment (`judge.align`, SIMBA / MemAlign), `optimize_prompts` |
-| 5 | `level5_autonomous` | GEPA, the analyst, **or OpenClaw editing itself** | the gate | online scoring (`register().start()`), loop runs as MLflow runs, rollback |
+1. [Self-Improvement and Self-Evolving with MLflow](https://opendatascience.com/self-improvement-vs-self-evolution-mlflow-part-1/): the vocabulary, and the MLflow components behind signal, store, and update.
+2. [Self-Improvement & MLflow: Part 2](https://opendatascience.com/self-improvement-mlflow-part-2/): the first loop by hand, and where it stops scaling.
+3. [Self-Improvement & MLflow: Automate via CI/CD](https://opendatascience.com/self-improvement-mlflow-part-3/): automating the loop, and where to stop.
 
-The update target throughout is the agent's `AGENTS.md`. OpenClaw's behavior is defined by plain files in its
-workspace. We keep `AGENTS.md` in the MLflow Prompt Registry and render the chosen version into a fresh
-workspace right before the agent runs (`src/sia/workspace.py`). Every change is then a numbered version with a
-commit message, and every rollback is an alias move. The policy documents in `knowledge/` sit next to it in the
-workspace and stay fixed.
+## Four components
 
-## Quickstart
+The repo holds four independent components. Each folder has its own README, install step and
+tests, and none imports another.
 
-```bash
-git clone <this repo> && cd self-improving-agent
-make install                      # uv venv + pip install -e ".[dev]"
-cp .env.example .env              # pick SIA_PROVIDER and add that provider's API key
-make server                       # MLflow on http://127.0.0.1:5000 (leave running)
-```
-
-In a second terminal:
-
-```bash
-make level0 level1 level2         # instrument, collect signal, first manual loop
-make drift level3                 # new kind of traffic; analyst writes proposals/<ts>/
-python levels/level3_agent_assisted/02_accept.py proposals/<ts> --promote
-make level4                       # align the judge, run GEPA, gate
-make reset setup level5           # start over and let the loop do all of it by itself
-```
-
-**No API key or OpenClaw yet?** `make rehearse` runs every level with a rule-based stand-in agent and code-only
-scorers in a throwaway store. It takes about three minutes. It's how CI checks the loop mechanics, and it's a
-dry run for the workshop.
-
-### Choosing an LLM provider
-
-Every model is named in MLflow's URI format, `<provider>:/<model>`. MLflow's judges, GEPA and judge alignment
-take these URIs directly. The repo's own model calls (the `direct` runtime and the trace analyst) go through
-[LiteLLM](https://docs.litellm.ai/), so any provider it supports works. For the most common ones, one variable
-picks a preset (`src/sia/llm.py`):
-
-| `SIA_PROVIDER` | agent model | judge / analyst / optimizer | key | judge alignment |
-|---|---|---|---|---|
-| `anthropic` (default) | `claude-haiku-4-5` | `claude-sonnet-5-5` | `ANTHROPIC_API_KEY` | SIMBA |
-| `openai` | `gpt-5.4-mini` | `gpt-5.5` | `OPENAI_API_KEY` | MemAlign |
-| `gemini` | `gemini-3.5-flash` | `gemini-3.1-pro-preview` | `GEMINI_API_KEY` | MemAlign |
-| `mistral` | `mistral-small-latest` | `mistral-large-latest` | `MISTRAL_API_KEY` | MemAlign |
-| `groq` | `llama-3.1-8b-instant` | `llama-3.3-70b-versatile` | `GROQ_API_KEY` | SIMBA |
-| `ollama` | `gpt-oss:20b` | `gpt-oss:20b` | none (runs locally) | SIMBA |
-
-To override either model, or to mix providers (for example, a local agent graded by a hosted judge):
-
-```bash
-SIA_AGENT_MODEL=ollama:/gpt-oss:20b
-MLFLOW_GENAI_JUDGE_DEFAULT_MODEL=openai:/gpt-5.5
-```
-
-The OpenClaw runtime gets the same model, translated to OpenClaw's naming (`gemini:/…` → `google/…`).
-OpenClaw reads the provider key from the environment. The judge model needs to handle tool calling and
-long structured output reasonably well. A small local model may make a weak judge; the Level 1 agreement check
-is where that would show up.
-
-### Agent runtimes (`SIA_BACKEND`)
-
-| Backend | What runs | Use for |
+| | what it is | start here |
 |---|---|---|
-| `openclaw` (default) | `openclaw agent --local --json` against an **isolated** profile in `.openclaw-state/`. Your `~/.openclaw` is never touched. | the real demo |
-| `direct` | a small tool-use loop (any provider, via LiteLLM) over the same workspace files (`list_files`, `read_file`) | GEPA and CI, where the agent is called dozens of times |
-| `offline` | a deterministic simulator that follows a few instructions in `AGENTS.md` | rehearsals and tests without keys |
+| **[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md)** | The OpenClaw → MLflow connector: MLflow's `@mlflow/mlflow-openclaw` tracing plugin, with the fixes it needs on OpenClaw 2026.10. Every OpenClaw run becomes an MLflow trace (`AGENT` → `LLM` / `TOOL` spans, tokens, session). Works with any OpenClaw profile. | `./install.sh --tracking-uri http://localhost:5000 --experiment openclaw` |
+| **[`harness/`](harness/README.md)** | The MLflow self-improving harness, `selfimprove`: the blog series' framework (signal → store → update, with triage, approval and a gate) for an agent you bring (a Python function, an HTTP service, a CLI, OpenClaw or Hermes), configured from `.env`. Ships workflows, walkthrough notebooks, and the talk's four-loop demo in [`harness/session`](harness/session/README.md). | `make install doctor` |
+| **[`sia/`](sia/README.md)** | The level-based self-improving agent (SIA): the tutorial's Acme Cloud support agent on OpenClaw, built up over six levels from tracing to an unattended loop. Set your provider and API key in `.env`, and every level runs with `make`. | `make install server`, then `make level0 level1 level2` |
+| **[`skills/`](skills/README.md)** | Two agent skills. `self-improving-agent`: everything above, packaged for a coding agent. It applies the framework with the harness, its workflows and the connector, writes verifiers, handles gate rejections, and keeps to the rules (the proposer never approves, the holdout stays hidden). `self-improving-with-mlflow`: loaded by OpenClaw itself, so the agent can check its standing, pass on corrections, recall confirmed lessons and propose changes to itself, all through the harness's gate. | `cp -r skills/self-improving-agent ~/.claude/skills/`; `selfimprove self setup --workspace <dir>` |
 
-OpenClaw needs Node and `npm i -g openclaw`. `make setup` writes the isolated config and validates it. Optional:
-`python levels/level0_instrument/01_setup.py --mlflow-otel` also streams OpenClaw's internal spans (model and
-tool calls) to MLflow's OTLP endpoint via the `diagnostics-otel` plugin. The MLflow team also publishes an
-OpenClaw tracing plugin (`openclaw plugins install @mlflow/mlflow-openclaw`, release candidate as of 0.2.0).
+How they fit together:
 
-## Walkthrough
+* The **connector** is the tracing layer for OpenClaw. The harness installs it into its own
+  isolated OpenClaw profile (`SI_OPENCLAW_MLFLOW=1`). The talk demo relies on it, because
+  whether the agent read a policy file is only visible in OpenClaw's own spans. SIA can use it
+  too (see its README).
+* The **skills** are how agents use the other three. `self-improving-agent` is for a coding agent:
+  it knows the harness's commands and workflows, the connector's setup, and the verifier
+  patterns from the talk's four loops. `self-improving-with-mlflow` is for OpenClaw at runtime: it
+  runs the harness's `selfimprove self` commands about itself, and the harness keeps the gate.
+* The **harness** and **SIA** are two builds of the same loop. SIA is the step-by-step
+  tutorial with one fixed agent. The harness is the reusable version that follows the blog
+  posts and works with any agent.
 
-### Level 0: instrument
-`01_setup.py` registers `scenario/workspace_v1/AGENTS.md` as v1 and points the `production` alias at it.
-`02_first_traces.py` sends a week of questions. Each one becomes a trace tagged with `topic`, `backend`,
-`prompt_version`, and `source=production`. Evaluation and optimizer traffic is tagged `source=eval`, so it can
-never be mistaken for real signal. v1 has three seeded problems: stale facts (30-day refunds), a mandatory
-Terms-of-Service disclaimer, and "give your best guess".
+## Demos
 
-### Level 1: signal
-* `01_human_feedback.py` has three simulated reviewers label every trace: `quality` feedback, an
-  `expected_response`, and a `key_facts` answer key. They grade with slightly different rubrics on purpose,
-  because that is what real reviewer pools do. `--live` creates a label schema and review queue so people can
-  label in the MLflow UI instead.
-* `02_automated_signal.py` runs code scorers and LLM judges on the existing traces (`evaluate()` with no
-  `predict_fn`) and prints failure rate by topic.
-* `03_signal_quality.py` checks the verifiers before trusting them: judge-vs-human agreement, reviewer
-  strictness, and failure themes. *An optimizer is only as good as its verifier.*
+| Demo | Length | What it shows |
+|---|---|---|
+| [`connectors/openclaw-mlflow/examples/live-demo.md`](connectors/openclaw-mlflow/examples/live-demo.md) | 5 min, live | ask a local OpenClaw a question, catch the made-up answer in its MLflow trace, fix `AGENTS.md` in MLflow (a new prompt version, then an alias move), ask again |
+| [`harness/session/`](harness/session/README.md) | 4 loops, precomputed | the self-improvement loop run four times on OpenClaw, from a person doing every step to `cycle` promoting through the gate |
 
-### Level 2: the manual loop
-Build the dataset from human-failed traces, register a hand-written fix
-(`scenario/fixes/level2_manual_AGENTS.md`) as v2 without promoting it, then run the gate:
+## Architecture
 
-```
-scorer                    train/baseline   train/candidate  holdout/baseline holdout/candidate
-has_key_facts                         0%              100%                0%              100%
-no_disclaimer_opener                  0%              100%                0%              100%
-no_stale_policy                      64%              100%               83%              100%
-```
+* [`docs/architecture.md`](docs/architecture.md): MLflow and the MLflow server, and how one OpenClaw
+  answer (through the connector) and one Hermes answer (in process) become traces.
+* [`harness/README.md`](harness/README.md#architecture): the harness, and what one `cycle` does.
+* [`sia/README.md`](sia/README.md#architecture): the levels, the `sia` package and its runtimes.
 
-The gate rules live in `src/sia/gate.py` and every later level reuses them:
-1. must-pass scorers (`no_stale_policy`) are at 100%,
-2. the candidate beats production on the dataset,
-3. the candidate is not worse on the **holdout**, which no optimizer ever sees.
-
-`make test` runs the same dataset as a pytest suite with `@mlflow.test`, and `.github/workflows/agent-regression.yml`
-runs it on every PR.
-
-### Level 3: agent-assisted
-With ten reviewers and a week of traffic, the bottleneck is reading. `01_propose.py` sends every failing trace,
-with its rationales, to an LLM analyst. The analyst returns up to five themes, one criterion per theme, and a
-proposed `AGENTS.md`, and writes them all to `proposals/<ts>/` for review. `02_accept.py` registers the candidate
-and **registers each theme criterion as a Guidelines judge** in MLflow's scorer registry (`theme_<slug>`), so the
-test suite grows with the evidence. It then adds the representative traces to the dataset and runs the gate.
-Prefer Claude Code? `mlflow agent setup --agent claude` installs MLflow's trace-analysis skills; give it the same job.
-
-### Level 4: optimizer
-* `01_align_judge.py` aligns the `quality` judge to the reviewers' labels (`judge.align`). It uses SIMBA by
-  when the provider has no embedding model (Anthropic, Groq), and MemAlign otherwise. Agreement is measured on held-out labels, and the
-  aligned judge is registered only if it helped.
-* `02_optimize.py` runs `mlflow.genai.optimize_prompts` with `GepaPromptOptimizer`. Its scorers are the code
-  checks, the guideline and theme judges, and the aligned judge. Run it with `SIA_BACKEND=direct`.
-* `03_gate.py` shows the diff and runs the gate. Read the diff: optimizers can win by pleasing the judge.
-
-### Level 5: autonomous
-`02_run_loop.py` runs `sia.loop.cycle()`. Each cycle is one MLflow run:
-
-1. **Signal:** read the production traces that arrived since the last cycle, and score any that are unscored.
-2. **Verifier health:** if the judge's agreement with new human labels drops below 75%, re-align it, or **halt and ask for a person**.
-3. **Store:** add human-labeled failures to the dataset. Failures only a scorer caught wait for a human label.
-4. **Update:** `--improver gepa | analyst | openclaw`. With `openclaw`, `openclaw agent exec` edits a copy of its own workspace, driven by the failure report.
-5. **Gate:** the same rules as Level 2, plus a bloat guard.
-6. **Ship:** move the alias, and record the failure rate it replaced. A later cycle rolls back if live results are worse.
+## Shared by all four
 
 ```
-======== cycle 1 ========   production v1: failure rate 62%  → proposed v2 → gate 35%→100% → PROMOTED
-======== cycle 2 ========   drift traffic starts (new support_process policy)   → healthy (6%)
-======== cycle 3 ========   production v2: failure rate 19%  → proposed v3 → gate 93%→100% → PROMOTED
-======== cycle 4 ========   production v3: failure rate 0%   → healthy
+README.md            this map
+docs/                architecture.md: MLflow, the server, OpenClaw and Hermes
+.agents/skills/      MLflow's agent skills for coding agents (trace analysis, evaluation, scorers);
+                     skills-lock.json pins them
+.github/workflows/   CI, one file per job, prefixed by component:
+                       openclaw-mlflow.yml               connector: build + unit tests
+                       selfimprove-offline.yml           harness: offline loop test
+                       selfimprove-regression.yml        harness: dataset as @mlflow.test
+                       selfimprove-loop.yml              harness: the scheduled loop
+                       sia-offline-smoke.yml             SIA: offline smoke tests
+                       sia-agent-regression.yml          SIA: the regression gate
 ```
 
-`01_monitor.py` turns on server-side online scoring, so judges label production traffic as it arrives. It needs
-`mlflow server` with a database backend. Custom `@scorer` code can't be registered on OSS MLflow, so the loop runs
-the code checks itself.
+Personal agents are someone's real setup, so every component keeps its OpenClaw (and Hermes)
+state inside its own folder. None of them touches `~/.openclaw`, `~/.hermes`, or a gateway
+you already run.
 
-Humans stay in the loop where they can't be replaced: labeling a sample of traffic. Those labels are the ground
-truth that keeps the judge honest and the dataset growing.
+## Platform support
 
-## Repository layout
+| Platform | Status |
+|---|---|
+| macOS, Apple Silicon (arm64) | supported and recommended: the harness and SIA test suites pass |
+| macOS, Intel (x86_64), or an Intel Python under Rosetta on Apple Silicon | supported: the harness and SIA install a compatible `cryptography` automatically, and their tests pass |
+| Linux, x86_64 | supported: CI runs on `ubuntu-latest` |
+| Linux, arm64 | not tested |
+| Windows | not tested; use WSL2 |
 
+Everything needs Python 3.11 through [uv](https://docs.astral.sh/uv/). The connector needs Node 22+;
+it builds to a single JavaScript file, so it runs the same on either architecture.
+
+### Intel (x86_64) Macs, and Intel Pythons on Apple Silicon
+
+`cryptography` 49 and 50 publish an Intel macOS wheel that fails to load, with
+`symbol not found in flat namespace` (`_OSSL_get_max_threads`, `_BIO_ADDR_free`). MLflow imports it as
+soon as it opens a tracking store, so every command fails. Both `harness/pyproject.toml` and
+`sia/pyproject.toml` therefore pin `cryptography<49` on Intel macOS only (48.0.1 works). Apple Silicon
+and Linux are unaffected and get the latest.
+
+**Check what you're running:**
+
+```bash
+uname -m                                                    # the machine: arm64 or x86_64
+file "$(command -v uv)"                                     # the uv build: arm64 or x86_64
+.venv/bin/python -c "import platform; print(platform.machine())"   # the venv's Python
 ```
-scenario/            knowledge base, flawed v1 AGENTS.md, the Level 2 fix, cases.yaml (traffic / holdout / drift)
-src/sia/
-  agent.py           traced entry point + openclaw / direct / offline runtimes, prompt <-> workspace
-  signals.py         code scorers, Guidelines judges, the alignable "quality" judge, theme judges
-  data.py            labeled traces -> evaluation dataset; holdout rows
-  gate.py            scorecards, promotion rules, promote / rollback
-  improvers.py       failure report, LLM analyst, OpenClaw self-edit, judge alignment, GEPA
-  loop.py            one autonomous cycle
-  reviewers.py       simulated reviewers (with deliberate disagreement)
-  traffic.py         simulated production traffic + labeling
-levels/              one folder per level; each script's docstring explains the step
-tests/unit           offline smoke tests (CI, no keys)
-tests/agent          the regression gate (@mlflow.test over the dataset + holdout)
+
+A venv's Python follows the `uv` build, not the machine. An Intel `uv` on Apple Silicon creates Intel
+venvs that run under Rosetta: they work, but more slowly.
+
+**On an Intel Mac:** nothing extra. `make install` (or the quickstart's `uv venv` + `uv pip install`)
+picks `cryptography` 48.0.1 for you.
+
+**On Apple Silicon:** use a native `uv`, so your venvs are arm64:
+
+```bash
+brew install uv          # with arm64 Homebrew in /opt/homebrew
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-## Notes on MLflow 3.16.1
+Then delete any existing `.venv` and run `make install` again in `harness/` and `sia/`.
 
-We hit three issues while building this. The workarounds are in the code:
-* `EvaluationResult.passed` treats expectation columns (such as `expected_response/value`) as assertions, so
-  `assert result.passed` fails on any dataset row that has an expected response. `sia.gate.scorer_failures()`
-  checks only the scorers' own columns.
-* Usage telemetry can deadlock on a lazy import when `evaluate()` runs scorers in worker threads. `import sia`
-  sets `MLFLOW_DISABLE_TELEMETRY=true`.
-* Registering the MLflow pytest plugin in a root `conftest.py` hung subprocess-based tests. The agent suite
-  enables it with `pytest -p mlflow.pytest.plugin tests/agent`.
+**To build an Intel venv on purpose** (for example, to test Intel support from an Apple Silicon Mac),
+ask uv for an x86_64 Python:
 
-Boolean feedback is stored as text. Filter with `feedback.quality = 'false'`, not `= False`.
+```bash
+uv venv -p cpython-3.11-macos-x86_64-none .venv && uv pip install -p .venv -e ".[dev]"
+```
+
+**A venv made before the pin**, or one where another package forces a newer `cryptography`, still
+fails. Fix it in place:
+
+```bash
+uv pip install -p .venv "cryptography<49"
+```

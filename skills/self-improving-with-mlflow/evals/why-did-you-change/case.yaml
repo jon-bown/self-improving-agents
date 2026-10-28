@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: why-did-you-change
+expected_outcome: |
+  Runs `selfimprove self status` and answers from it: the production version, that it was promoted by the gate and why, what it replaced, the last gate result. Does not invent what changed, and points to `selfimprove diff` for the detail.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: schedule-and-auto-promote
+expected_outcome: |
+  Explains the selfimprove-loop workflow (nightly jobs, weekly cycle), the SELFIMPROVE_ENABLED variable and MLFLOW_TRACKING_URI and provider-key secrets, the human queue persistence, and that SI_AUTO_PROMOTE should be enabled only after several runs without a person overriding the gate, with monitor/rollback and the cycle's own guardrails.

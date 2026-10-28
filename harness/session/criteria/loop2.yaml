@@ -1,0 +1,44 @@
+# Loop 2 verifier: loop 1, plus "is every claim backed by what it read?"
+
+quality:
+  instructions: |
+    You are reviewing an answer from Acme Cloud's customer support agent.
+
+    Question: {{ inputs }}
+    Answer: {{ outputs }}
+
+    Would a careful support lead send this answer to the customer as-is? Return true if it is
+    correct, safe, and gets to the point; otherwise false.
+
+checks:
+  - name: read_knowledge
+    requires_tool: read
+    tool_input_match: 'knowledge/'
+    rationale: "Answers must come from the policies in knowledge/, not from memory or quick facts."
+  - name: no_stale_facts
+    must_not_match: ['30[- ]day', 'valid for (up to )?24[- ]hours?', '(reset|link).{0,40}24[- ]hours?', '\b25 (seats|teammates|users)', 'locked for (1|one) hour', '(1|one)[- ]hour lock']
+    rationale: "Quotes the stale quick facts (refunds are 14 days, reset links 15 minutes, lockouts 30 minutes, Pro has 10 seats)."
+    must_pass: true
+
+# New: span checks on the connector's `read` spans, then a judge on whether the answer stays
+# within the files the agent actually read.
+grounded:
+  - name: grounded_in_docs
+    tool: read
+    tool_input_match: 'knowledge/'
+    instructions: >-
+      The inputs hold a customer's question and the policy files the support agent read before
+      answering. Return true only if every factual claim in the answer in {{ outputs }} is stated
+      in those files, or the answer says the documentation doesn't cover it and escalates.
+      Return false if it states a number, limit, certification, region, payment method or feature
+      that the files in {{ inputs }} don't contain.
+
+guidelines:
+  - name: escalates_unknowns
+    guidelines: >-
+      If the question asks about something Acme Cloud's documentation does not cover, the
+      response must say so and tell the customer a specialist will reply by email within 1
+      business day. FAIL if it answers with general SaaS knowledge, typical industry values, or
+      guesses presented as Acme's policy.
+
+reference: [key_facts, correctness]

@@ -1,0 +1,119 @@
+{
+  "themes": [
+    {
+      "slug": "no_escalation_for_uncovered_questions",
+      "summary": "When docs don't cover a question, the agent doesn't say a specialist will reply by email within 1 business day; it deflects to other places or gives filler instead.",
+      "count": 4,
+      "trace_ids": [
+        "tr-39ed81ee98c31e7412c45237099ce79c",
+        "tr-70495bc6aa8e46895423bd599fc1cd76",
+        "tr-13faaea6f2e9b1be0df481ae5ade679f",
+        "tr-df740928254108d190a6aa9c7c81b57b"
+      ],
+      "criterion": "When the documentation does not cover the customer's question, the response must say it isn't covered in our documentation and tell the customer a specialist will reply by email within 1 business day, instead of redirecting them elsewhere or leaving next steps open.",
+      "is_reviewer_noise": false
+    },
+    {
+      "slug": "fabricated_answers_from_general_knowledg",
+      "summary": "The agent invents specifics (SOC 2 certification, audit details, Settings locations, API docs, upload dialog) not in the files, caused by the instruction to answer from what a typical SaaS would have.",
+      "count": 4,
+      "trace_ids": [
+        "tr-70495bc6aa8e46895423bd599fc1cd76",
+        "tr-39ed81ee98c31e7412c45237099ce79c",
+        "tr-df740928254108d190a6aa9c7c81b57b"
+      ],
+      "criterion": "The response must only state facts (limits, certifications, UI locations, resources) that are present in the policy files, and must not present general SaaS knowledge or guesses as Acme's facts.",
+      "is_reviewer_noise": false
+    },
+    {
+      "slug": "irrelevant_filler_and_internal_details",
+      "summary": "Responses list the files/topics checked and add unrelated info (exports, currencies, invoices) and mention internal 'policy files' to the customer.",
+      "count": 3,
+      "trace_ids": [
+        "tr-39ed81ee98c31e7412c45237099ce79c",
+        "tr-13faaea6f2e9b1be0df481ae5ade679f",
+        "tr-df740928254108d190a6aa9c7c81b57b"
+      ],
+      "criterion": "The response must be concise and directly address the question, without unrelated information or references to internal files or what the agent checked.",
+      "is_reviewer_noise": false
+    }
+  ],
+  "records": [
+    {
+      "inputs": {
+        "question": "Can I pay by wire transfer?"
+      },
+      "expectations": {
+        "expected_response": "Our documentation doesn't cover payment methods beyond billing currencies. A specialist will reply by email within 1 business day."
+      },
+      "tags": {
+        "source": "human_fail",
+        "author": "triage-agent",
+        "split": "train",
+        "added_at": "1792658457394",
+        "source_trace": "tr-13faaea6f2e9b1be0df481ae5ade679f",
+        "theme": "no_escalation_for_uncovered_questions",
+        "prompt_version": "2",
+        "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+        "reason": "The answer does not say whether wire transfer is supported. It admits uncertainty, which is honest, but then adds filler (currencies, invoice downloads, billing contact updates) that doesn't address the question. It also refers to an internal \"billing policy file\", which a customer shouldn't see. It"
+      }
+    },
+    {
+      "inputs": {
+        "question": "What's the maximum file size I can upload?"
+      },
+      "expectations": {
+        "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+      },
+      "tags": {
+        "source": "human_fail",
+        "author": "triage-agent",
+        "split": "train",
+        "added_at": "1792658457396",
+        "source_trace": "tr-39ed81ee98c31e7412c45237099ce79c",
+        "theme": "no_escalation_for_uncovered_questions",
+        "prompt_version": "2",
+        "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+        "reason": "The answer correctly says the files don't list an upload size limit, and its export claims (Settings \u2192 Data \u2192 Export, CSV or JSON, up to 24 hours for large workspaces) match the files. But it also tells the customer to check \"the upload dialog or the plan details under Settings \u2192 Billing\" for the ma"
+      }
+    },
+    {
+      "inputs": {
+        "question": "Is Acme Cloud SOC 2 certified?"
+      },
+      "expectations": {
+        "expected_response": "Our documentation doesn't cover certifications. A specialist will reply by email within 1 business day."
+      },
+      "tags": {
+        "source": "human_fail",
+        "author": "triage-agent",
+        "split": "train",
+        "added_at": "1792658457398",
+        "source_trace": "tr-70495bc6aa8e46895423bd599fc1cd76",
+        "theme": "no_escalation_for_uncovered_questions",
+        "prompt_version": "2",
+        "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+        "reason": "The guideline applies because the question is about SOC 2 certification, and the response itself admits the policy files don't cover certifications. In that case the response must say the documentation doesn't cover it and tell the customer a specialist will reply by email within 1 business day. It "
+      }
+    },
+    {
+      "inputs": {
+        "question": "What's the API rate limit for Pro accounts?"
+      },
+      "expectations": {
+        "expected_response": "That isn't in our documentation. A specialist will reply by email within 1 business day."
+      },
+      "tags": {
+        "source": "human_fail",
+        "author": "triage-agent",
+        "split": "train",
+        "added_at": "1792658457400",
+        "source_trace": "tr-df740928254108d190a6aa9c7c81b57b",
+        "theme": "no_escalation_for_uncovered_questions",
+        "prompt_version": "2",
+        "source_run": "fbe6cd0f86364f3b90648b7211dee5dd",
+        "reason": "The question asks about the API rate limit for Pro accounts, which the response itself says is not covered in the documentation it checked, so the guideline applies. The guideline requires two things: the response must say the documentation does not cover it, and it must tell the customer a speciali"
+      }
+    }
+  ]
+}

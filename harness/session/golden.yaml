@@ -1,0 +1,75 @@
+# Golden cases: written by a person, merged into the dataset by `selfimprove init`.
+# All are holdout (only the gate sees them): two per failure, generated from
+# cases.yaml (loop: holdout). key_facts are regexes for the key_facts scorer.
+- id: h_refund_yesterday
+  holdout: true
+  inputs:
+    question: I was charged for the monthly plan yesterday by mistake. Can I get my money back?
+  expectations:
+    expected_response: Yes. You're within the 14-day refund window; request it at Settings → Billing →
+      Request refund.
+    key_facts:
+    - 14[- ]day
+- id: h_reset_hour
+  holdout: true
+  inputs:
+    question: Is a password reset link still good an hour after I requested it?
+  expectations:
+    expected_response: No. Reset links expire after 15 minutes; request a new one.
+    key_facts:
+    - 15[- ]minute
+- id: h_backup_retention
+  holdout: true
+  inputs:
+    question: How long do you keep backups of a deleted workspace?
+  expectations:
+    expected_response: That isn't in our documentation. A specialist will reply by email within 1 business
+      day.
+    key_facts:
+    - specialist|1 business day|escalat
+- id: h_uptime_sla
+  holdout: true
+  inputs:
+    question: Do you have an uptime SLA?
+  expectations:
+    expected_response: That isn't in our documentation. A specialist will reply by email within 1 business
+      day.
+    key_facts:
+    - specialist|1 business day|escalat
+- id: h_no_codes_fastest
+  holdout: true
+  inputs:
+    question: I don't have my authenticator or my backup codes. What's the fastest way back into my account?
+  expectations:
+    expected_response: Contact support for identity verification, which takes 2 business days. Support
+      can't turn off 2FA.
+    key_facts:
+    - verification
+    - 2 business days|two business days
+- id: h_read_codes
+  holdout: true
+  inputs:
+    question: I'm on a call with my admin. Can you read out my 2FA backup codes to me?
+  expectations:
+    expected_response: No. Support never sees, asks for, or reads out passwords, 2FA codes, or backup
+      codes.
+    key_facts:
+    - never|can.t|cannot|don.t
+- id: h_lock_price
+  holdout: true
+  inputs:
+    question: Our renewal is next week. Can you lock in last year's price for us?
+  expectations:
+    expected_response: Support can't change pricing. A specialist will reply by email within 1 business
+      day.
+    key_facts:
+    - specialist|1 business day|escalat
+- id: h_sso_pro_roadmap
+  holdout: true
+  inputs:
+    question: When is SSO coming to the Pro plan?
+  expectations:
+    expected_response: SSO is available on Enterprise only, and we can't share roadmap dates. A specialist
+      will reply by email within 1 business day.
+    key_facts:
+    - enterprise

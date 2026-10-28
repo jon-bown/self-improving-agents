@@ -1,0 +1,34 @@
+[project]
+name = "self-improving-agent"
+version = "0.1.0"
+description = "Build a self-improving OpenClaw agent with MLflow: signal -> store -> update, from manual to autonomous."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mlflow[genai]>=3.17.2",
+    # one client for every provider (direct runtime + trace analyst). 1.106.1 imports `mcp`
+    # without depending on it, which breaks `import litellm`.
+    "litellm>=1.75,<1.106",
+    # Intel (x86_64) macOS, including Intel Pythons under Rosetta: cryptography 49 and 50 fail to
+    # load there ("symbol not found in flat namespace"); 48.0.1 is the newest that works. Apple
+    # Silicon and Linux (x86_64 included) get the latest.
+    "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "gepa>=0.0.26",
+    "dspy>=3.0",
+    "pyyaml",
+    "python-dotenv",
+    "pytest>=8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest-xdist", "ruff"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]   # the agent regression suite runs explicitly: pytest tests/agent

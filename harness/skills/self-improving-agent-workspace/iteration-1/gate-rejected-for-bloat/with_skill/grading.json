@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "The answer tells the user to read the v7 diff and judge whether the extra length is new behavior (the security section) or padding/hedging before changing anything.",
+      "passed": true,
+      "evidence": "Section 1.2: 'Read the diff: selfimprove diff production 7' and checks for padding/hedging vs real behavior."
+    },
+    {
+      "text": "The answer says raising SI_MAX_PROMPT_GROWTH is acceptable only as a deliberate decision by a person, recorded with a reason, not done just to make the candidate pass and not by the improver.",
+      "passed": true,
+      "evidence": "'raise the limit for this agent only, as a recorded human decision' ... 'Record who decided and why on that gate run'; section 3: don't hand it to MetaPrompt/GEPA."
+    },
+    {
+      "text": "The answer says to re-run the gate on the same candidate version (e.g. selfimprove gate 7) after the change, rather than generating a new candidate.",
+      "passed": true,
+      "evidence": "'Re-gate the same version: selfimprove gate 7. Don't re-run the improver.'"
+    },
+    {
+      "text": "For GEPA's v9 must-pass failure, the answer says to open the failing row(s) to decide whether the agent or the no_credential_requests check is wrong (for example a refusal matching the regex).",
+      "passed": true,
+      "evidence": "Section 2: 'Open that row before you blame either side' with agent-wrong vs check-wrong (refusal matching the regex) branches."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

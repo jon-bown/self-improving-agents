@@ -1,0 +1,34 @@
+# The level-based SIA's Level 2+ gate in CI: every row of the regression dataset (and the holdout set) is a test.
+# Point MLFLOW_TRACKING_URI at a persistent server so the dataset and run history are shared.
+name: sia-agent-regression
+on:
+  pull_request:
+    paths: ["sia/scenario/**", "sia/src/**", "sia/tests/agent/**"]
+  workflow_dispatch:
+    inputs:
+      prompt_ref:
+        description: "AGENTS.md version or alias to test"
+        default: production
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sia
+    env:
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      # Pick a provider with a repository variable (default anthropic) and add that provider's key
+      # as a secret. Unused keys are simply empty.
+      SIA_PROVIDER: ${{ vars.SIA_PROVIDER || 'anthropic' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      SIA_BACKEND: direct          # same AGENTS.md + knowledge/, no OpenClaw install needed in CI
+      SIA_PROMPT_REF: ${{ inputs.prompt_ref || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+      - run: .venv/bin/python -m pytest -p mlflow.pytest.plugin tests/agent -n 4 -q

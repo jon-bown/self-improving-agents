@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: openclaw-no-traces
+expected_outcome: |
+  Diagnoses that the connector needs an HTTP MLflow server (not sqlite) and the conversation-access grant, points to connectors/openclaw-mlflow/install.sh, and wires the harness with SI_AGENT=openclaw and SI_OPENCLAW_MLFLOW=1 plus a requires_tool/tool-span check, keeping ~/.openclaw untouched.

@@ -1,0 +1,70 @@
+# Golden cases: written by a person, merged into the dataset by `selfimprove init`.
+# holdout: true  -> only the gate ever sees it (no improver, analyst or approver does)
+# holdout: false -> part of the CI suite the optimizer trains on
+# key_facts are regexes for the `key_facts` reference scorer.
+- id: currencies
+  holdout: true
+  inputs:
+    question: Can I pay in Canadian dollars?
+  expectations:
+    expected_response: No. Acme Cloud bills in USD, EUR, and GBP only.
+    key_facts:
+    - USD
+    - EUR
+    - GBP
+- id: refund_where
+  holdout: true
+  inputs:
+    question: Bought the monthly plan yesterday by mistake. Refund?
+  expectations:
+    expected_response: Yes, you are within the 14-day window. Request it at Settings → Billing → Request refund.
+    key_facts:
+    - 14[- ]day
+- id: sso_enterprise
+  holdout: true
+  inputs:
+    question: Which plan do I need for SAML single sign-on?
+  expectations:
+    expected_response: Enterprise.
+    key_facts:
+    - Enterprise
+- id: lost_2fa_no_codes
+  holdout: true
+  inputs:
+    question: No phone and no backup codes. Am I locked out forever?
+  expectations:
+    expected_response: No. Contact support for identity verification, which takes 2 business days.
+    key_facts:
+    - 2 business days
+- id: offline_browser
+  holdout: true
+  inputs:
+    question: Can I use Acme Cloud offline in Chrome?
+  expectations:
+    expected_response: No. Offline mode is only in the desktop app.
+    key_facts:
+    - desktop
+- id: seats_free
+  holdout: true
+  inputs:
+    question: Can I add a colleague on the free plan?
+  expectations:
+    expected_response: No. Free has 1 seat; upgrade to Pro for up to 10.
+    key_facts:
+    - (1 seat|one seat|single seat)
+- id: refund_window
+  holdout: false
+  inputs:
+    question: How long can I wait to request a refund?
+  expectations:
+    expected_response: Refunds are available within 14 days of purchase.
+    key_facts:
+    - 14[- ]day
+- id: reset_expiry
+  holdout: false
+  inputs:
+    question: How long is a password reset link valid?
+  expectations:
+    expected_response: 15 minutes.
+    key_facts:
+    - 15 minutes

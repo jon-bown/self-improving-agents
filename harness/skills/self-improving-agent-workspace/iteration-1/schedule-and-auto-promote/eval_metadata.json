@@ -1,0 +1,10 @@
+{
+  "eval_name": "schedule-and-auto-promote",
+  "prompt": "we've run the loop by hand a few times on our support bot (analyst writes candidates, i promote). now i want it running nightly in github actions against our shared mlflow server, and eventually promoting by itself. what do i need to set up, and how do i know when it's safe to turn on auto promote?",
+  "assertions": [
+    "The answer names the SELFIMPROVE_ENABLED repository variable and the MLFLOW_TRACKING_URI secret (a shared server with a database backend) plus provider API key secrets.",
+    "The answer describes the schedule: nightly score/monitor/align/triage/approve and a weekly cycle (improve + gate), via .github/workflows/selfimprove-loop.yml.",
+    "The answer ties turning on SI_AUTO_PROMOTE to evidence, such as several manual/assisted runs where a person did not override the gate, rather than a fixed date.",
+    "The answer explains that after an automatic promotion, monitor compares live traffic to the replaced version and rolls back beyond SI_ROLLBACK_MARGIN."
+  ]
+}
