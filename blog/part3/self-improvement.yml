@@ -1,0 +1,60 @@
+# 8. Run the Loop in CI
+#
+# From Self-Improvement & MLflow, Part 3: Automate via CI/CD:
+# https://opendatascience.com/self-improvement-mlflow-part-3/
+# .github/workflows/self-improvement.yml
+name: self-improvement
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  pull_request:
+
+env:
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  ingest:                                   # Section 2
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install "mlflow[genai]"
+      - run: mlflow agent setup                 # connect the coding agent to MLflow
+      - run: |
+          mlflow traces search --experiment-id 1 \
+            --filter-string "feedback.quality = 'Fail'" \
+            --output json > /tmp/failing_examples.json
+      - run: python loop/ingest.py
+
+  align-judge:                              # Section 5
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install "mlflow[genai]" dspy
+      - run: python loop/align_judge.py
+
+  verify:                                   # Section 6
+    needs: [ingest, align-judge]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install "mlflow[genai]" pytest pytest-xdist
+      - run: python loop/approve_tests.py
+      - run: pytest -n auto tests/regression
+
+  improve:                                  # Section 7
+    needs: verify
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install "mlflow[genai]"
+      - run: python loop/improve_skill.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
