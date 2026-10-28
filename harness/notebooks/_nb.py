@@ -27,6 +27,7 @@ def setup(fresh: bool = False, offline: bool | None = None):
     if str(HARNESS) not in sys.path:
         sys.path.insert(0, str(HARNESS))
     if fresh:
+        _drop_cached_stores()
         shutil.rmtree(STORE, ignore_errors=True)
     STORE.mkdir(parents=True, exist_ok=True)
     env_file = HARNESS / ".env" if (HARNESS / ".env").is_file() else HARNESS / ".env.example"
@@ -63,6 +64,27 @@ def setup(fresh: bool = False, offline: bool | None = None):
     print(config.settings.describe())
     print(f"mode          {'offline (rule-based agent, code checks only)' if offline else 'live'}")
     return exp
+
+
+def _drop_cached_stores() -> None:
+    """Close MLflow's pooled SQLite connections so a re-run of setup(fresh=True) can delete the store.
+
+    MLflow caches one engine per URI on the store classes (and the tracking store itself). Deleting
+    mlflow.db under those open connections leaves them on the unlinked file, and the next write fails
+    with "attempt to write a readonly database".
+    """
+    if "mlflow" not in sys.modules:
+        return
+    from mlflow.store.model_registry.sqlalchemy_store import SqlAlchemyStore as RegistryStore
+    from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore as TrackingStore
+    from mlflow.tracking._tracking_service import utils as tracking_utils
+
+    for cls in (TrackingStore, RegistryStore):
+        with cls._engine_map_lock:
+            for engine in cls._engine_map.values():
+                engine.dispose()
+            cls._engine_map.clear()
+    tracking_utils._tracking_store_registry._get_store_with_resolved_uri.cache_clear()
 
 
 def tree(trace, width: int = 90) -> None:
