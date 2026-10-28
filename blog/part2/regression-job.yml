@@ -1,0 +1,14 @@
+# Run the tests in CI
+#
+# From Self-Improvement & MLflow, Part 2:
+# https://opendatascience.com/self-improvement-mlflow-part-2/
+  regression:
+    runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      MLFLOW_GENAI_JUDGE_DEFAULT_MODEL: "openai:/gpt-5-mini"
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install "mlflow>=3.14" pytest pytest-xdist
+      - run: pytest tests/ -n auto
