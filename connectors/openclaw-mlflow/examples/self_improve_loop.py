@@ -113,6 +113,14 @@ def agent_traces(experiment_id: str) -> list:
             if t.data.spans and t.data.spans[0].name == "openclaw_agent"]
 
 
+def index_trace(trace, prompt_version) -> None:
+    """Link a trace to the AGENTS.md version that produced it, and copy its spans into the server's
+    span table. The connector uploads spans only as a JSON artifact, and the server reads the table
+    for span.* searches, the Overview's tool charts and the judges `monitor` runs on the server."""
+    MlflowClient().link_prompt_versions_to_trace([prompt_version], trace.info.trace_id)
+    _get_store().log_spans(trace.info.experiment_id, trace.data.spans)
+
+
 def open_issues(experiment_id: str) -> list:
     """Issues `detect` found that nobody has resolved or rejected yet, worst first."""
     issues = _get_store().search_issues(experiment_id=experiment_id, filter_string="status = 'pending'",
@@ -135,18 +143,21 @@ def answer_of(trace) -> str:
     return str(out)
 
 
-def openclaw_reply(env: dict, message_file: Path | None = None, message: str | None = None) -> str:
+def openclaw_reply(env: dict, message_file: Path | None = None, message: str | None = None,
+                   session_id: str | None = None) -> str:
     """One OpenClaw turn. A normal turn takes 20-40 s.
     Killing OpenClaw mid-turn can leave its profile locked for minutes, so this never does: it shows
     that it's still waiting, and Ctrl-C (which OpenClaw handles itself) is the way out. Output goes to
     files, not pipes, so a worker process that outlives the CLI can't block us.
     If the computer sleeps mid-turn, OpenClaw's own turn timeout counts the sleep and the turn fails
-    when it wakes ("worker task timed out"). That failure is retried once, since nothing was wrong."""
-    stdout, stderr, code, slept = _openclaw_turn(env, message_file, message)
+    when it wakes ("worker task timed out"). That failure is retried once, since nothing was wrong.
+    Turns that share a session_id are one conversation; without one, every turn starts fresh."""
+    session_id = session_id or f"demo-{uuid.uuid4().hex[:8]}"
+    stdout, stderr, code, slept = _openclaw_turn(env, message_file, message, session_id)
     if code != 0 and slept:
         print("   the computer was asleep during that turn, so OpenClaw timed it out; asking again ...",
               flush=True)
-        stdout, stderr, code, _ = _openclaw_turn(env, message_file, message)
+        stdout, stderr, code, _ = _openclaw_turn(env, message_file, message, session_id)
     if code != 0:
         raise SystemExit(f"openclaw failed ({code}): {stderr[-600:]}\n{FALLBACK}")
     payload = json.loads(stdout)
@@ -157,9 +168,9 @@ def openclaw_reply(env: dict, message_file: Path | None = None, message: str | N
     return str(payload.get("final") or payload.get("text") or "")
 
 
-def _openclaw_turn(env: dict, message_file: Path | None, message: str | None) -> tuple[str, str, int, bool]:
-    cmd = ["openclaw", "agent", "--local", "--agent", "main", "--session-id",
-           f"demo-{uuid.uuid4().hex[:8]}", "--json"]
+def _openclaw_turn(env: dict, message_file: Path | None, message: str | None,
+                   session_id: str) -> tuple[str, str, int, bool]:
+    cmd = ["openclaw", "agent", "--local", "--agent", "main", "--session-id", session_id, "--json"]
     cmd += ["--message-file", str(message_file)] if message_file else ["-m", message]
     slept = False
     with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
@@ -301,6 +312,7 @@ def gate(args) -> None:
             openclaw_reply(dict(os.environ), message=q)
             t = next(t for t in reversed(agent_traces(exp.experiment_id)) if t.info.request_time >= start)
             client.set_trace_tag(t.info.trace_id, "gate_candidate", f"v{version}")
+            index_trace(t, cand)  # ran the candidate, not production
             runs.append(t)
         print("   scoring ...")
         quiet_evaluate(runs, [read_knowledge, grounded_in_docs(args.judge_model)])
