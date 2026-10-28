@@ -2,8 +2,8 @@
 # Build the MLflow tracing plugin for OpenClaw from this folder and install it into an
 # OpenClaw profile, configured to export traces to an MLflow tracking server.
 #
-#   ./install.sh --tracking-uri http://localhost:5000 --experiment my-agent
-#   ./install.sh --tracking-uri http://localhost:5000 --experiment-id 1
+#   ./install.sh --tracking-uri http://localhost:5070 --experiment my-agent
+#   ./install.sh --tracking-uri http://localhost:5070 --experiment-id 1
 #   ./install.sh --build-only            # just produce the .tgz
 #
 # The profile is whichever one the openclaw CLI would use: ~/.openclaw by default, or the one
@@ -59,7 +59,7 @@ case "$tracking_uri" in
   http://*|https://*|databricks*) ;;
   *) die "the plugin exports over HTTP, so --tracking-uri must be an MLflow server
     (http://..., https://... or databricks), not '$tracking_uri'. Start one with:
-      mlflow server --port 5000" ;;
+      mlflow server --port 5070" ;;
 esac
 
 if [[ -z "$experiment_id" ]]; then
