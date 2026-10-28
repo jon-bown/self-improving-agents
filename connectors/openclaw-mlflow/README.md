@@ -170,10 +170,13 @@ for your own layout. For the whole loop (triage, improvement and a gate), use th
 [harness](../../harness/README.md) with `SI_OPENCLAW_MLFLOW=1`.
 
 [`examples/demo.sh`](examples/demo.sh) is a five-minute version for a live demo: `server`, `setup`,
-then `ask "question"`, which always runs whatever `@production` points at. `score` judges the new
-traces, `improve` has OpenClaw rewrite its own `AGENTS.md` from the failures (registered as a
-candidate, [`examples/self_improve_loop.py`](examples/self_improve_loop.py)), and `gate` re-asks the
-failing question plus a holdout one and moves `production` only if every check passes. Or edit
+then `ask "question"`, which always runs whatever `@production` points at. `traffic` asks six
+everyday questions; `detect` runs MLflow's automatic issue detection over the traces and names the
+problem, with a root cause and the traces it affects (`score` is the quicker per-trace check).
+`improve` has OpenClaw rewrite its own `AGENTS.md` from that Issue (registered as a candidate,
+[`examples/self_improve_loop.py`](examples/self_improve_loop.py)), and `gate` re-asks the failing
+questions plus a holdout one and moves `production` only if every check passes, marking the Issue
+resolved. Or edit
 `AGENTS.md` in the MLflow UI (a new prompt version, then move the alias) and the next `ask` uses it.
 `./demo.sh use 1` rolls back. It keeps its own OpenClaw profile and server in `~/odsc-5min`.
 [`examples/live-demo.md`](examples/live-demo.md) is the script: every command, click and

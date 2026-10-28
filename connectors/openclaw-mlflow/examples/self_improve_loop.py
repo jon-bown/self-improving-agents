@@ -1,17 +1,26 @@
-"""The automatic half of the live demo: OpenClaw proposes a fix to itself, and a gate decides.
+"""The automatic half of the live demo: MLflow finds the issue, OpenClaw proposes a fix, a gate decides.
 
+    python self_improve_loop.py detect --demo ~/odsc-5min      # MLflow issue detection over the traces
     python self_improve_loop.py improve --demo ~/odsc-5min     # failing traces -> OpenClaw -> candidate version
     python self_improve_loop.py gate --demo ~/odsc-5min        # test the candidate; promote only if it passes
 
-`improve` collects the traces that `score` failed, with the judge's reasons, and hands them to
-OpenClaw together with the AGENTS.md in production. OpenClaw replies with a corrected AGENTS.md,
+`detect` runs MLflow's automatic issue detection (`discover_issues`) over the agent's traces: our
+grounding judge triages every trace, and MLflow clusters the failures into named Issues, each with
+a root cause, and links them to the traces they affect. (MLflow's default triage judge rates user
+satisfaction; it can't see that an answer isn't in the policies, so it passes confident made-up
+answers.)
+
+`improve` takes the newest open Issue (or, without one, the traces that `score` failed, with the
+judge's reasons) and hands it to OpenClaw together with the AGENTS.md in production. OpenClaw replies with a corrected AGENTS.md,
 which is registered in the Prompt Registry as a candidate. The alias doesn't move: whoever writes
 a fix doesn't get to ship it.
 
-`gate` runs the candidate through OpenClaw on the questions that failed, plus a question the
+`gate` runs the candidate through OpenClaw on the questions that failed (the Issue's traces and
+any `score` failed), plus a question the
 improver never saw (the refund window, the demo's holdout), scores those runs with the same two
 checks, and moves `@production` to the candidate only if every check passes. Otherwise production
-stays where it is, and the reasons are recorded on the candidate.
+stays where it is, and the reasons are recorded on the candidate. A promotion marks the Issue
+resolved.
 
 Set MLFLOW_TRACKING_URI first (demo.sh does). Needs the harness venv's mlflow and an Anthropic key.
 """
@@ -19,7 +28,9 @@ Set MLFLOW_TRACKING_URI first (demo.sh does). Needs the harness venv's mlflow an
 from __future__ import annotations
 
 import argparse
+import contextlib
 import difflib
+import io
 import json
 import logging
 import os
@@ -34,6 +45,9 @@ os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 
 import mlflow  # noqa: E402
 from mlflow import MlflowClient  # noqa: E402
+from mlflow.entities.assessment import IssueReference  # noqa: E402
+from mlflow.entities.issue import IssueStatus  # noqa: E402
+from mlflow.tracking._tracking_service.utils import _get_store  # noqa: E402
 
 from self_improvement_demo import grounded_in_docs, quiet_evaluate, read_knowledge  # noqa: E402
 
@@ -41,6 +55,7 @@ logging.getLogger("mlflow").setLevel(logging.WARNING)
 
 CHECKS = ("read_knowledge", "grounded_in_docs")
 HOLDOUT = "What's your refund window?"  # never shown to the improver; only the gate asks it
+GATE_FAILED = 2                          # failed questions the gate re-asks (plus the holdout); ~30 s each
 MAX_GROWTH = 1.5                         # a candidate longer than this times production is rejected
 SLEEP_GAP = 15                           # seconds a 1 s poll must take before we call it a sleep
 FALLBACK = 'to finish by hand: ./demo.sh push agents/v2.md "v2: escalate when the files are silent"' 
@@ -53,10 +68,10 @@ failures a reviewer found. You reply with exactly what the task asks for, and no
 """
 
 TASK = """\
-MLflow traced a customer support agent and a reviewer failed some of its answers. Fix the agent's
+MLflow traced a customer support agent and found a problem in its answers. Fix the agent's
 instructions so it stops making these mistakes.
 
-## Failures
+{issue}## Failures
 
 {failures}
 
@@ -96,6 +111,21 @@ def agent_traces(experiment_id: str) -> list:
     return [t for t in mlflow.search_traces(locations=[experiment_id], return_type="list",
                                             order_by=["timestamp_ms ASC"])
             if t.data.spans and t.data.spans[0].name == "openclaw_agent"]
+
+
+def open_issues(experiment_id: str) -> list:
+    """Issues `detect` found that nobody has resolved or rejected yet, worst first."""
+    issues = _get_store().search_issues(experiment_id=experiment_id, filter_string="status = 'pending'",
+                                        include_trace_count=True)
+    rank = {"high": 0, "medium": 1, "low": 2}
+    return sorted((i for i in issues if str(i.severity) != "not_an_issue"),
+                  key=lambda i: (rank.get(str(i.severity), 3), -i.created_timestamp))
+
+
+def issue_traces(traces: list, issue_id: str) -> list:
+    """The traces `detect` linked to an Issue (it logs an IssueReference assessment on each)."""
+    return [t for t in traces
+            if any(isinstance(a, IssueReference) and a.issue_id == issue_id for a in t.info.assessments)]
 
 
 def answer_of(trace) -> str:
@@ -175,26 +205,43 @@ def improve(args) -> None:
     exp = mlflow.set_experiment(args.experiment)
     prod = mlflow.genai.load_prompt(f"prompts:/{args.name}@production")
 
-    failing, seen = [], set()
-    for t in reversed(agent_traces(exp.experiment_id)):  # newest first
-        v = verdicts(t)
-        question = t.info.request_preview or ""
-        if v and not all(is_pass(v.get(n)) for n in CHECKS) and question not in seen and question != HOLDOUT:
-            failing.append((t, v))
-            seen.add(question)
-    failing = failing[:3]
+    traces = agent_traces(exp.experiment_id)
+    issues = open_issues(exp.experiment_id)
+    issue = issues[0] if issues else None
+    failing, seen, report = [], set(), []
+    if issue:  # what `detect` found: the Issue, and the traces it's linked to
+        for t in reversed(issue_traces(traces, issue.issue_id)):
+            q = t.info.request_preview or ""
+            if q not in seen and q != HOLDOUT:
+                failing.append(t)
+                seen.add(q)
+                note = next(a.rationale for a in t.info.assessments
+                            if isinstance(a, IssueReference) and a.issue_id == issue.issue_id)
+                report.append(f"- Question: {q}\n  Answer: {answer_of(t)[:600]}\n  MLflow: {(note or '')[:800]}")
+        failing, report = failing[:3], report[:3]
+        header = (f"## Issue MLflow found: {issue.name} (severity {issue.severity})\n\n{issue.description}\n\n"
+                  f"Root cause: {' '.join(issue.root_causes or [])}\n\n")
+        source = f"Issue '{issue.name}' ({len(failing)} trace(s))"
+    if not failing:  # no Issue yet: the traces `score` failed, with the judge's reasons
+        issue, header = None, ""
+        for t in reversed(traces):  # newest first
+            v = verdicts(t)
+            q = t.info.request_preview or ""
+            if v and not all(is_pass(v.get(n)) for n in CHECKS) and q not in seen and q != HOLDOUT:
+                failing.append(t)
+                seen.add(q)
+                reasons = "; ".join(f"{n}: {v[n].rationale}" for n in CHECKS if n in v and not is_pass(v[n]))
+                report.append(f"- Question: {q}\n  Answer: {answer_of(t)[:600]}\n  Reviewer: {reasons[:800]}")
+        failing, report = failing[:3], report[:3]
+        source = f"{len(failing)} failing trace(s)"
     if not failing:
-        raise SystemExit("nothing has failed yet: ask a question, then run ./demo.sh score")
+        raise SystemExit("nothing has failed yet: ask a question, then run ./demo.sh detect (or score)")
 
-    report = []
-    for t, v in failing:
-        reasons = "; ".join(f"{n}: {v[n].rationale}" for n in CHECKS if n in v and not is_pass(v[n]))
-        report.append(f"- Question: {t.info.request_preview}\n  Answer: {answer_of(t)[:600]}\n  Reviewer: {reasons[:800]}")
     task = args.demo / "improver" / "task.md"
     env = improver_env(args.demo)
-    task.write_text(TASK.format(failures="\n".join(report), agents_md=prod.template.strip()))
+    task.write_text(TASK.format(issue=header, failures="\n".join(report), agents_md=prod.template.strip()))
 
-    print(f"OpenClaw is rewriting v{prod.version} from {len(failing)} failing trace(s) ...")
+    print(f"OpenClaw is rewriting v{prod.version} from {source} ...")
     reply = openclaw_reply(env, message_file=task)
     m = re.search(r"```(?:markdown|md)?\s*\n(.*?)```", reply, re.S)
     candidate = (m.group(1) if m else reply).strip() + "\n"
@@ -209,9 +256,10 @@ def improve(args) -> None:
 
     pv = mlflow.genai.register_prompt(
         name=args.name, template=candidate,
-        commit_message=f"proposed by OpenClaw from {len(failing)} failing trace(s)",
+        commit_message=f"proposed by OpenClaw from {source}",
         tags={"author": "openclaw", "status": "candidate",
-              "source_traces": ",".join(t.info.trace_id for t, _ in failing)[:500]})
+              "source_traces": ",".join(t.info.trace_id for t in failing)[:500],
+              **({"issue_id": issue.issue_id} if issue else {})})
     diff = difflib.unified_diff(prod.template.splitlines(), candidate.splitlines(),
                                 f"v{prod.version} (@production)", f"v{pv.version} (candidate)", lineterm="", n=1)
     print("\n".join(diff))
@@ -227,12 +275,19 @@ def gate(args) -> None:
         raise SystemExit(f"v{version} is already production; run ./demo.sh improve first")
     cand = mlflow.genai.load_prompt(f"prompts:/{args.name}/{version}")
 
+    traces = [t for t in agent_traces(exp.experiment_id) if "gate_candidate" not in t.info.tags]
+    issue_id = cand.tags.get("issue_id")
     questions = []
-    for t in agent_traces(exp.experiment_id):
+    for t in issue_traces(traces, issue_id) if issue_id else []:  # the Issue's traces first
+        q = t.info.request_preview or ""
+        if q not in questions and q != HOLDOUT:
+            questions.append(q)
+    questions = questions[-GATE_FAILED:]
+    for t in traces:  # then anything `score` failed
         v, q = verdicts(t), t.info.request_preview or ""
         if v and not all(is_pass(v.get(n)) for n in CHECKS) and q not in questions and q != HOLDOUT:
             questions.append(q)
-    questions = questions[-3:] + [HOLDOUT]
+    questions = questions[:GATE_FAILED] + [HOLDOUT]
 
     workspace = args.demo / "workspace"
     (workspace / "AGENTS.md").write_text(cand.template)
@@ -273,6 +328,41 @@ def gate(args) -> None:
     mlflow.genai.set_prompt_version_tag(args.name, version, "promoted_by", "gate")
     mlflow.genai.set_prompt_version_tag(args.name, version, "replaced_version", str(prod.version))
     print(f"\nPROMOTED by the gate: @production v{prod.version} -> v{version}. (./demo.sh use {prod.version} rolls back)")
+    if issue_id:
+        issue = _get_store().update_issue(issue_id, status=IssueStatus.RESOLVED)
+        print(f"   Issue '{issue.name}' marked resolved in MLflow.")
+
+
+def detect(args) -> None:
+    from mlflow.genai.discovery.pipeline import discover_issues
+
+    exp = mlflow.set_experiment(args.experiment)
+    traces = [t for t in agent_traces(exp.experiment_id) if "gate_candidate" not in t.info.tags]
+    if not traces:
+        raise SystemExit("no traces yet: ./demo.sh traffic, or ./demo.sh ask a question")
+    print(f"MLflow issue detection over {len(traces)} trace(s), with {args.judge_model} ...", flush=True)
+    start = time.time()
+    # Triage with our grounding judge: MLflow's default judge rates user satisfaction, and a
+    # confident made-up answer satisfies. MLflow then does the clustering and root-cause analysis.
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        result = discover_issues(experiment_id=exp.experiment_id, traces=traces, model=args.judge_model,
+                                 scorers=[grounded_in_docs(args.judge_model), read_knowledge],
+                                 categories=args.categories, max_issues=5)
+    issues = [i for i in result.issues if str(i.severity) != "not_an_issue"]
+    print(f"done in {time.time() - start:.0f} s"
+          + (f", about ${result.total_cost_usd:.2f}" if result.total_cost_usd else "") + "\n")
+    if not issues:
+        print("no issues found")
+        return
+    for i in issues:
+        n = len(issue_traces([mlflow.get_trace(t.info.trace_id) for t in traces], i.issue_id))
+        print(f"Issue: {i.name}  [{i.severity}, {n} trace(s)]")
+        print(f"   {i.description}")
+        for cause in i.root_causes or []:
+            print(f"   root cause: {cause}")
+        print()
+    print(f"In MLflow: {mlflow.get_tracking_uri()}/#/experiments/{exp.experiment_id}/evaluation-runs/"
+          f"{result.triage_run_id}/issues\nNext: ./demo.sh improve")
 
 
 def main() -> None:
@@ -282,13 +372,16 @@ def main() -> None:
     ap.add_argument("--experiment", default="openclaw-demo")
     ap.add_argument("--judge-model", default=os.getenv("MLFLOW_GENAI_JUDGE_DEFAULT_MODEL", "anthropic:/claude-sonnet-5-5"))
     sub = ap.add_subparsers(dest="cmd", required=True)
+    d = sub.add_parser("detect", help="MLflow automatic issue detection over the agent's traces")
+    d.add_argument("--categories", nargs="+", default=["correctness", "adherence", "relevance", "safety"],
+                   help="the kinds of issue to look for")
     sub.add_parser("improve", help="OpenClaw proposes a corrected AGENTS.md from the failing traces")
     g = sub.add_parser("gate", help="test a candidate; promote it only if every check passes")
     g.add_argument("version", nargs="?", type=int, help="the candidate version (default: the newest)")
     args = ap.parse_args()
     os.environ["MLFLOW_GENAI_JUDGE_DEFAULT_MODEL"] = args.judge_model
     try:
-        improve(args) if args.cmd == "improve" else gate(args)
+        {"detect": detect, "improve": improve, "gate": gate}[args.cmd](args)
     except KeyboardInterrupt:
         raise SystemExit(f"\ninterrupted: @production is unchanged. Run the same command again, or {FALLBACK}") from None
 

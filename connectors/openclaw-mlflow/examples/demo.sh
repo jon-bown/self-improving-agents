@@ -6,9 +6,13 @@
 #   ./demo.sh server                 start the MLflow server (port 5050); leave it running
 #   ./demo.sh setup                  profile + workspace, install the connector, AGENTS.md v1 -> MLflow
 #   ./demo.sh ask "question"         run whatever @production points at, then ask OpenClaw
+#   ./demo.sh traffic                ask a handful of everyday questions, so there's history to analyze
+#   ./demo.sh detect                 MLflow's automatic issue detection over the traces: named Issues,
+#                                    each with a root cause and the traces it affects
 #   ./demo.sh score [--all]          score new traces (--all: every trace) with read_knowledge and
 #                                    grounded_in_docs, a judge that sees the files the agent read
-#   ./demo.sh improve                OpenClaw rewrites its own AGENTS.md from the failing traces
+#   ./demo.sh improve                OpenClaw rewrites its own AGENTS.md from the open Issue (or, without
+#                                    one, the traces score failed)
 #                                    (a candidate version; @production doesn't move)
 #   ./demo.sh gate [N]               test the candidate on the failing questions + a holdout one;
 #                                    promote it automatically only if every check passes
@@ -92,13 +96,28 @@ EOF
     awake openclaw agent --local --agent main --session-id "demo-$(date +%s)" -m "$*" 2>/dev/null | grep -v '^\['
     ;;
 
+  traffic)
+    need_server
+    [[ -f "$OPENCLAW_CONFIG_PATH" ]] || die "not set up yet: run './demo.sh setup'"
+    load_key
+    "${AGENTS_MD[@]}" pull "$DEMO/workspace" | sed 's/.*<- /running /'
+    # Three the policies cover, three they don't. Not the refund window: that's the gate's holdout.
+    for q in "How do I reset my password?" "What's the API rate limit?" "Can I export my data to CSV?" \
+             "Where is my data hosted?" "How many seats does the Pro plan include?" "Do you have an uptime SLA?"; do
+      echo "   asking: $q"
+      awake openclaw agent --local --agent main --session-id "demo-$(date +%s)" -m "$q" >/dev/null 2>&1 \
+        || echo "   (that one failed; carrying on)"
+    done
+    echo "done. Next: ./demo.sh detect"
+    ;;
+
   score)
     need_server
     load_key
     awake "$PY" "$HERE/self_improvement_demo.py" --experiment openclaw-demo --score-only "$@"
     ;;
 
-  improve|gate)
+  detect|improve|gate)
     need_server
     load_key
     awake "$PY" "$HERE/self_improve_loop.py" --demo "$DEMO" "$cmd" "$@"
@@ -128,6 +147,6 @@ EOF
     ;;
 
   *)
-    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
     ;;
 esac

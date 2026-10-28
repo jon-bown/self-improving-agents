@@ -4,9 +4,10 @@ A five-minute live demo of self-improvement on a local OpenClaw agent, with the 
 tracing every run.
 
 1. You ask the agent a question in the terminal, and it makes something up.
-2. Its trace in MLflow shows the policy files it read, and that none of them say what it said. A
-   judge in MLflow fails the answer and says why.
-3. OpenClaw reads those failures and rewrites its own instructions. The rewrite goes into the
+2. Its trace in MLflow shows the policy files it read, and that none of them say what it said.
+   MLflow's automatic issue detection reads all the agent's traces, finds the problem, names it,
+   and points at the cause.
+3. OpenClaw reads that Issue and rewrites its own instructions. The rewrite goes into the
    MLflow Prompt Registry as a candidate, not into production.
 4. A gate re-asks the failing question plus one the agent never saw, scores both, and promotes the
    candidate only if every check passes.
@@ -63,11 +64,22 @@ ready. In MLflow (experiment openclaw-demo):
 
 Open both in a browser and close the MLflow Assistant panel on the right.
 
+**Give it some history** (about 3 minutes): issue detection looks for patterns across traces, so
+ask the agent a handful of everyday questions first.
+
+```bash
+./demo.sh traffic
+```
+
+It asks six: three the policies answer (password reset, CSV export, Pro seats) and three they
+don't (API rate limit, data hosting, uptime SLA). v1 answers the last three from its quick facts.
+It doesn't ask the refund window, which is the gate's holdout.
+
 **Rehearse, then reset**, so the stage run starts clean:
 
 1. Stop the server with Ctrl-C.
 2. Run `./demo.sh reset`, which deletes `~/odsc-5min`.
-3. Start again with `./demo.sh server` and `./demo.sh setup`.
+3. Start again with `./demo.sh server`, `./demo.sh setup` and `./demo.sh traffic`.
 
 ## On stage (about 5 minutes)
 
@@ -100,24 +112,45 @@ None of the policy files mention an SLA. With this v1, every rehearsal run answe
    Say: "Someone wrote those quick facts from memory. They aren't in any policy, and the agent
    repeats them."
 
-### 3. Let MLflow catch it (about 15 s)
+### 3. Let MLflow find the issue (about 35 s)
 
 ```bash
-./demo.sh score
+./demo.sh detect
 ```
 
-`score` runs two checks on every trace that doesn't have a verdict yet:
-
-* `read_knowledge`: a code check that the agent read a policy file
-* `grounded_in_docs`: a judge that sees the files the agent read, and fails any claim that isn't in
-  them
-
-The verdicts are attached to the traces in MLflow. In the terminal:
+`detect` runs MLflow's automatic issue detection over every trace the agent has made: the
+`traffic` from before the talk plus the question you just asked. A judge triages each trace, and
+MLflow clusters the failures into named Issues, each with a severity, a root cause, and the traces
+it affects:
 
 ```
-   Do you have an uptime SLA?            read_knowledge=pass  grounded_in_docs=FAIL
-      why: The policy files (billing, product how-to, account access) say nothing about an uptime SLA. ...
+MLflow issue detection over 7 trace(s), with anthropic:/claude-sonnet-5-5 ...
+done in 29 s, about $0.08
+
+Issue: Unsupported claims beyond documentation  [high, 4 trace(s)]
+   The support assistant states specific facts that do not appear in the documentation files it
+   read, such as a 1,000 requests/minute API rate limit, US and EU data hosting, a 99.9% uptime SLA
+   with service credits ... It never says the documentation lacks the information and never
+   escalates to a specialist.
+   root cause: ... The system prompt appears to lack a strict grounding rule, a 'documentation
+   doesn't cover this' fallback, and an escalation instruction. ...
+
+In MLflow: http://127.0.0.1:5050/#/experiments/1/evaluation-runs/<run>/issues
+Next: ./demo.sh improve
 ```
+
+MLflow writes the name and root cause, so they vary from run to run. Open the link (or, in Traces,
+click an entry in the new **Issues** column). The Issues page has the Issue card, with its
+description and categories, and the affected traces. Say: "I didn't tell MLflow to look for an
+SLA. It found the pattern across four different questions, and it points at the prompt."
+
+The triage judge is `grounded_in_docs`, which sees the files the agent read. MLflow's default
+triage judge rates user satisfaction, and a confident made-up answer satisfies: in rehearsal it
+passed all six traces. That's worth a sentence on stage: you still have to tell MLflow what
+"good" means.
+
+`./demo.sh score` is the quicker check without the clustering (about 15 s): the same judge and
+`read_knowledge`, with a verdict per trace. `improve` uses its verdicts when there's no open Issue.
 
 ### 4. OpenClaw fixes itself (about 30 s)
 
@@ -125,12 +158,13 @@ The verdicts are attached to the traces in MLflow. In the terminal:
 ./demo.sh improve
 ```
 
-`improve` hands OpenClaw the failing traces (question, answer, and the judge's reason) together
-with the `AGENTS.md` in production, and asks for a corrected file. It registers the reply as a new
+`improve` hands OpenClaw the open Issue (its description and root cause, and up to three of its
+traces with MLflow's note on each) together with the `AGENTS.md` in production, and asks for a
+corrected file. It registers the reply as a new
 prompt version, a **candidate**, and prints the diff:
 
 ```
-OpenClaw is rewriting v1 from 1 failing trace(s) ...
+OpenClaw is rewriting v1 from Issue 'Unsupported claims beyond documentation' (3 trace(s)) ...
 --- v1 (@production)
 +++ v2 (candidate)
 @@ -11,5 +11,4 @@
@@ -139,39 +173,44 @@ OpenClaw is rewriting v1 from 1 failing trace(s) ...
 -  or that they should ask someone else. If the files don't cover a question, answer from these
 -  quick facts: uptime SLA 99.9% monthly with service credits, API limit 1,000 requests per
 -  minute, data hosted in the US and EU.
-+- Customers want a straight answer, but never state a fact, number, limit, or policy that isn't in
-+  the policy files. If the files don't cover a question, say that the documentation doesn't cover
-+  it and that a specialist will reply by email within 1 business day.
++- Customers want a straight answer. Give only facts that appear in the files you read; never add
++  numbers, limits, SLAs, regions, or steps from memory. If the files don't cover the question,
++  say so and tell the customer a specialist will reply by email within 1 business day.
 
 registered v2 as a candidate; @production is still v1. Next: ./demo.sh gate
 ```
 
 OpenClaw writes the wording, so it differs a little from run to run; the change is always to that
 last bullet. Say: "The agent wrote its own fix. It doesn't get to ship it." On the prompt page, v2
-is there with the tags `author=openclaw` and `status=candidate`, and `@production` is still on v1.
+is there with the tags `author=openclaw`, `status=candidate` and `issue_id`, and `@production` is
+still on v1.
 
-### 5. The gate decides (about 75 s)
+### 5. The gate decides (about 90 s)
 
 ```bash
 ./demo.sh gate
 ```
 
-`gate` runs the candidate through OpenClaw on the question that failed, plus one it never saw: the
-refund window, a documented answer the fix mustn't break. It scores both runs with the same two
-checks, and moves `@production` only if every check passes:
+`gate` runs the candidate through OpenClaw on two of the Issue's questions, plus one it never saw:
+the refund window, a documented answer the fix mustn't break. It scores the runs with
+`read_knowledge` and `grounded_in_docs`, and moves `@production` only if every check passes. A
+promotion also marks the Issue resolved:
 
 ```
-gate: v2 (candidate) vs v1 (production), on 2 questions (the last one the improver never saw)
+gate: v2 (candidate) vs v1 (production), on 3 questions (the last one the improver never saw)
+   asking: Where is my data hosted?
    asking: Do you have an uptime SLA?
    asking: What's your refund window?
    scoring ...
+   Where is my data hosted?                           read_knowledge=pass  grounded_in_docs=pass
    Do you have an uptime SLA?                         read_knowledge=pass  grounded_in_docs=pass
    What's your refund window?                         read_knowledge=pass  grounded_in_docs=pass
 
 PROMOTED by the gate: @production v1 -> v2. (./demo.sh use 1 rolls back)
+   Issue 'Unsupported claims beyond documentation' marked resolved in MLflow.
 ```
 
-While it runs, explain the holdout: the improver saw only the SLA failure, so the refund question
+While it runs, explain the holdout: the improver never saw the refund question, so it
 checks that the fix generalizes and doesn't just suppress answers. Production keeps running v1
 until the alias moves. If any check fails, the gate prints `REJECTED` with the reasons, tags v2
 `gate=failed`, and leaves `@production` alone.
@@ -183,21 +222,22 @@ until the alias moves. If any check fails, the gate prints `REJECTED` with the r
 ```
 
 ```
-running openclaw-agents-md v2 (@production): proposed by OpenClaw from 1 failing trace(s)
+running openclaw-agents-md v2 (@production): proposed by OpenClaw from Issue 'Unsupported claims beyond documentation' (3 trace(s))
 
-I don't have an uptime SLA in the information I can access, so I can't confirm one. Our policy
-files cover billing, account access, and product how-to, and none of them mention uptime ...
+I don't have information about an uptime SLA. Our billing, account access, and product how-to
+policies don't cover it, so I can't confirm whether one exists or what it guarantees.
 
-A specialist will reply to you by email within 1 business day with the details.
+A specialist will reply to you by email within 1 business day. ...
 ```
 
 ### 7. Close (30 s)
 
-Show the SLA traces side by side in Traces, and v2's tags on the prompt page (`gate=passed`,
-`promoted_by=gate`, `replaced_version=1`). Say:
+Show the SLA traces side by side in Traces, the Issue under **Resolved** on the Issues page, and
+v2's tags on the prompt page (`gate=passed`, `promoted_by=gate`, `replaced_version=1`). Say:
 
-> Same question, same agent. The agent proposed the change, MLflow's checks decided, and the
-> deploy was one alias move with a record. A rollback is moving `production` back to v1.
+> Same question, same agent. MLflow found the issue, the agent proposed the change, MLflow's
+> checks decided, and the deploy was one alias move with a record. A rollback is moving
+> `production` back to v1.
 
 ### Alternative: fix it by hand in MLflow (about 1.5 min)
 
@@ -239,7 +279,9 @@ Then go on to step 6.
 | `improve` or `gate` prints `... still waiting for OpenClaw` | something is slow: give it a minute, or press Ctrl-C (production is untouched) and rerun the command, or `./demo.sh push agents/v2.md "v2: escalate when the files are silent"` |
 | `... the computer was asleep` | the Mac slept mid-turn (a closed lid, or idle sleep on battery), and OpenClaw's turn timer counted the sleep. The failed turn is retried once by itself. `demo.sh` runs each turn under `caffeinate -i`, which stops idle sleep but not a closed lid on battery: keep the lid open during rehearsals |
 | `gate` prints `REJECTED` | say so: that's the gate working. Show the reasons on the candidate's `gate_reasons` tag, then `./demo.sh improve` again, or `push agents/v2.md` |
-| `improve` says nothing has failed yet | run `./demo.sh score` first; `improve` reads the judge's verdicts |
+| `improve` says nothing has failed yet | run `./demo.sh detect` (or `score`) first; `improve` reads the open Issue, or the judge's verdicts |
+| `detect` finds no issues | there's too little history, or it's all from a fixed version: `./demo.sh traffic` on v1 first |
+| `detect` is slow or fails | `./demo.sh score` instead (about 15 s); `improve` then works from its verdicts |
 | Typing the edit in the UI goes wrong | `./demo.sh push agents/v2.md "v2: escalate when the files are silent"` registers the same fix and moves `@production` |
 | Need to roll back | `./demo.sh use 1`, or move the alias back in the UI |
 | `ask` still says `running ... v1` after the edit | the alias wasn't moved: the gate rejected the candidate, or (by hand) step 5 of the alternative |
@@ -248,7 +290,8 @@ Then go on to step 6.
 | No traces appear | the server isn't running (`./demo.sh server`), or it's a different OpenClaw profile; run everything through `demo.sh` |
 | `demo.sh: no MLflow server on port 5050` | start it: `./demo.sh server` |
 
-Each OpenClaw turn takes about 25–40 seconds; `gate` makes two. Two early rehearsals stalled for over 15 minutes in `gate`; both times the Mac had gone to sleep mid-turn (lid closed during an unattended run), not OpenClaw. Keep a screen recording of a rehearsal as a backup.
+Each OpenClaw turn takes about 25–40 seconds; `gate` makes three, and `traffic` six. `detect`
+took 29–31 s and about $0.10 on six traces in rehearsal. Two early rehearsals stalled for over 15 minutes in `gate`; both times the Mac had gone to sleep mid-turn (lid closed during an unattended run), not OpenClaw. Keep a screen recording of a rehearsal as a backup.
 
 ## Every command
 
@@ -256,10 +299,14 @@ Each OpenClaw turn takes about 25–40 seconds; `gate` makes two. Two early rehe
 ./demo.sh server                 start the MLflow server (port 5050); leave it running
 ./demo.sh setup                  profile + workspace, install the connector, AGENTS.md v1 -> MLflow
 ./demo.sh ask "question"         run whatever @production points at, then ask OpenClaw
+./demo.sh traffic                ask six everyday questions, so there's history to analyze
+./demo.sh detect                 MLflow's automatic issue detection over the traces: named Issues,
+                                 each with a root cause and the traces it affects
 ./demo.sh score [--all]          score new traces (--all: every trace) with read_knowledge and
                                  grounded_in_docs, a judge that sees the files the agent read
-./demo.sh improve                OpenClaw rewrites AGENTS.md from the failing traces -> a candidate
-./demo.sh gate [N]               test candidate N (default: newest) on the failing questions + the
+./demo.sh improve                OpenClaw rewrites AGENTS.md from the open Issue (or the traces score
+                                 failed) -> a candidate
+./demo.sh gate [N]               test candidate N (default: newest) on two failed questions + the
                                  refund holdout; promote it only if every check passes
 ./demo.sh push FILE "message"    register FILE as a new version and point @production at it
 ./demo.sh use N                  point @production at version N (moving it back is a rollback)
@@ -277,7 +324,7 @@ touching the stage setup.
 | [`demo.sh`](demo.sh) | every command above; sets the OpenClaw profile, the tracking URI and the API key |
 | [`agents_md.py`](agents_md.py) | `push`, `pull` and `use`: the Prompt Registry calls (`register_prompt`, `set_prompt_alias`, `load_prompt`) |
 | [`self_improvement_demo.py`](self_improvement_demo.py) | `score`: `mlflow.genai.evaluate` over the existing traces, with no `predict_fn`, so nothing re-runs |
-| [`self_improve_loop.py`](self_improve_loop.py) | `improve` and `gate`: the improver's OpenClaw run (a second profile, no connector), the candidate's tags, the gate's runs and the alias move |
+| [`self_improve_loop.py`](self_improve_loop.py) | `detect`, `improve` and `gate`: MLflow's `discover_issues`, the improver's OpenClaw run (a second profile, no connector), the candidate's tags, the gate's runs, the alias move and resolving the Issue |
 | [`agents/v1.md`](agents/v1.md), [`agents/v2.md`](agents/v2.md) | the instructions before and after the fix |
 | [`../install.sh`](../install.sh) | builds and installs the MLflow connector into the demo's OpenClaw profile |
 
