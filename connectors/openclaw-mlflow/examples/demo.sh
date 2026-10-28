@@ -17,6 +17,21 @@
 #   ./demo.sh gate [N]               test the candidate on the failing questions + a holdout one;
 #                                    promote it automatically only if every check passes
 #
+#   More MLflow, on the same traces (seconds each, unless it says otherwise):
+#   ./demo.sh traces ["FILTER"]      search traces (any MLflow filter); latency, tokens and verdicts
+#                                    per AGENTS.md version
+#   ./demo.sh prompts [A B]          every AGENTS.md version: aliases, tags, traces it made; diff A B
+#   ./demo.sh feedback yes|no "why"  your verdict on the newest trace (--trace ID for another)
+#   ./demo.sh expect "answer"        your expected answer for the newest trace
+#   ./demo.sh judges                 MLflow's built-in LLM judges on the newest trace (~20 s)
+#   ./demo.sh gateway                an MLflow AI Gateway endpoint for the judge model (key kept on
+#                                    the server; calls traced with their tokens)
+#   ./demo.sh monitor on|off|status  the server scores every new trace by itself, about once a minute
+#   ./demo.sh chat                   a three-turn conversation, judged as one session (~2 min)
+#   ./demo.sh dataset                an evaluation dataset: golden cases + your expected answers
+#   ./demo.sh eval [N]               run version N (default @production) on the dataset (~2 min);
+#                                    compare eval runs in the UI
+#
 #   ./demo.sh push FILE "message"    register FILE as a new version and point @production at it
 #                                    (agents/v2.md is the fix, if you'd rather not type it in the UI)
 #   ./demo.sh use N                  point @production at version N (moving it back is a rollback)
@@ -30,12 +45,21 @@ DEMO="${DEMO:-$HOME/odsc-5min}"
 PORT="${PORT:-5050}"
 PY="$REPO/harness/.venv/bin/python"
 AGENTS_MD=("$PY" "$HERE/agents_md.py")
+FEATURES=("$PY" "$HERE/mlflow_features.py")
 
 export MLFLOW_TRACKING_URI="http://127.0.0.1:$PORT"
 export OPENCLAW_STATE_DIR="$DEMO/openclaw" OPENCLAW_CONFIG_PATH="$DEMO/openclaw/openclaw.json"
 export MLFLOW_DISABLE_AGENT_HINT=1
 
 die() { echo "demo.sh: $*" >&2; exit 1; }
+ours() {  # $DEMO is this demo's: marked, or holding only what `server` makes (an older server didn't mark it)
+  [[ -f "$DEMO/.odsc-demo" ]] && return
+  [[ -z "$(ls -A "$DEMO" 2>/dev/null | grep -vxE 'mlflow\.db|artifacts')" ]]
+}
+claim() {  # create and mark $DEMO, refusing a folder that's someone else's
+  [[ ! -e "$DEMO" ]] || ours || die "$DEMO already exists and isn't this demo's; set DEMO= to use another folder"
+  mkdir -p "$DEMO" && touch "$DEMO/.odsc-demo"   # the marker `reset` looks for
+}
 server_up() { curl -sf "$MLFLOW_TRACKING_URI/health" >/dev/null; }
 need_server() { server_up || die "no MLflow server on port $PORT: run './demo.sh server' in another terminal"; }
 load_key() {  # the Anthropic key from harness/.env, never printed; for OpenClaw and the judge
@@ -53,15 +77,15 @@ awake() {  # keep a Mac from idle-sleeping mid-turn: a sleeping Mac makes OpenCl
 cmd="${1:-help}"; shift || true
 case "$cmd" in
   server)
-    mkdir -p "$DEMO"
+    claim
     exec "$REPO/harness/.venv/bin/mlflow" server --host 127.0.0.1 --port "$PORT" \
       --backend-store-uri "sqlite:///$DEMO/mlflow.db" --artifacts-destination "$DEMO/artifacts"
     ;;
 
   setup)
     need_server
+    claim
     mkdir -p "$DEMO/openclaw" "$DEMO/workspace"
-    touch "$DEMO/.odsc-demo"   # marks the folder as this demo's, for `reset`
     # The policies, minus support_process.md: its "escalate anything not covered" rule would
     # fight v1 and hide the failure. The fix (agents/v2.md) adds that rule to AGENTS.md instead.
     mkdir -p "$DEMO/workspace/knowledge"
@@ -93,7 +117,9 @@ EOF
     load_key
     "${AGENTS_MD[@]}" pull "$DEMO/workspace" | sed 's/.*<- /running /'
     echo
+    since=$(( $(date +%s) * 1000 ))
     awake openclaw agent --local --agent main --session-id "demo-$(date +%s)" -m "$*" 2>/dev/null | grep -v '^\['
+    "${FEATURES[@]}" link --since "$since"   # the trace -> the AGENTS.md version that answered
     ;;
 
   traffic)
@@ -102,12 +128,14 @@ EOF
     load_key
     "${AGENTS_MD[@]}" pull "$DEMO/workspace" | sed 's/.*<- /running /'
     # Three the policies cover, three they don't. Not the refund window: that's the gate's holdout.
+    since=$(( $(date +%s) * 1000 ))
     for q in "How do I reset my password?" "What's the API rate limit?" "Can I export my data to CSV?" \
              "Where is my data hosted?" "How many seats does the Pro plan include?" "Do you have an uptime SLA?"; do
       echo "   asking: $q"
       awake openclaw agent --local --agent main --session-id "demo-$(date +%s)" -m "$q" >/dev/null 2>&1 \
         || echo "   (that one failed; carrying on)"
     done
+    "${FEATURES[@]}" link --since "$since"
     echo "done. Next: ./demo.sh detect"
     ;;
 
@@ -121,6 +149,24 @@ EOF
     need_server
     load_key
     awake "$PY" "$HERE/self_improve_loop.py" --demo "$DEMO" "$cmd" "$@"
+    ;;
+
+  traces|prompts|feedback|expect|dataset)
+    need_server
+    "${FEATURES[@]}" "$cmd" "$@"
+    ;;
+
+  judges|gateway|monitor)
+    need_server
+    load_key
+    "${FEATURES[@]}" "$cmd" "$@"
+    ;;
+
+  chat|eval)
+    need_server
+    [[ -f "$OPENCLAW_CONFIG_PATH" ]] || die "not set up yet: run './demo.sh setup'"
+    load_key
+    awake "${FEATURES[@]}" --demo "$DEMO" "$cmd" "$@"
     ;;
 
   push)
@@ -142,11 +188,12 @@ EOF
 
   reset)
     server_up && die "stop the MLflow server first (Ctrl-C in its terminal)"
-    [[ -f "$DEMO/.odsc-demo" ]] || die "$DEMO isn't this demo's folder; not deleting it"
+    [[ -e "$DEMO" ]] || { echo "nothing to remove at $DEMO"; exit 0; }
+    ours || die "$DEMO isn't this demo's folder; not deleting it"
     rm -rf "$DEMO" && echo "removed $DEMO"
     ;;
 
   *)
-    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+    awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"   # the header above
     ;;
 esac
