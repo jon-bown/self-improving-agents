@@ -1,5 +1,6 @@
 # Self-improving agent with OpenClaw + MLflow.  `make help` lists targets.
-PY      ?= .venv/bin/python
+# One venv for the whole repo, at the root: `make install` here runs the root's `make setup`.
+PY      ?= ../.venv/bin/python
 PORT    ?= 5000
 L       := levels
 
@@ -8,8 +9,8 @@ L       := levels
 help:           ## list targets
 	@grep -E '^[a-z0-9]+:.*##' Makefile | sed 's/:.*##/\t/'
 
-install:        ## create .venv and install the package (needs uv)
-	uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+install:        ## set up the repo (root `make setup`): venv, kernel, OpenClaw, connector, .env
+	$(MAKE) -C .. setup
 
 server:         ## run the MLflow tracking server (sqlite backend; enables online scoring jobs)
 	$(PY) -m mlflow server --backend-store-uri sqlite:///mlflow.db --port $(PORT)

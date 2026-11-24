@@ -75,22 +75,23 @@ hands everything to `loop.cycle()`, driven by simulated `traffic`.
 
 ## Quickstart
 
+First run `make setup` at the repo root ([Setup](../README.md#setup)). It builds the repo's one venv
+(`../.venv`) with SIA installed, installs OpenClaw, and creates `sia/.env` from `.env.example`.
+
 ```bash
-git clone <this repo> && cd self-improving-agent/sia
-make install                      # uv venv + pip install -e ".[dev]"
-cp .env.example .env              # pick SIA_PROVIDER and add that provider's API key
+cd sia                            # edit .env: pick SIA_PROVIDER and add that provider's API key
 make server                       # MLflow on http://127.0.0.1:5000 (leave running)
 ```
 
-On an Intel (x86_64) Mac, or with an Intel Python on Apple Silicon, see
-[Platform support](../README.md#platform-support).
+On a Mac, port 5000 may be taken by AirPlay Receiver. If so, use `make server PORT=5001` and set
+`MLFLOW_TRACKING_URI=http://127.0.0.1:5001` in `.env`.
 
 In a second terminal:
 
 ```bash
 make level0 level1 level2         # instrument, collect signal, first manual loop
 make drift level3                 # new kind of traffic; analyst writes proposals/<ts>/
-python levels/level3_agent_assisted/02_accept.py proposals/<ts> --promote
+../.venv/bin/python levels/level3_agent_assisted/02_accept.py proposals/<ts> --promote
 make level4                       # align the judge, run GEPA, gate
 make reset setup level5           # start over and let the loop do all of it by itself
 ```
@@ -135,7 +136,8 @@ is where that would show up.
 | `direct` | a small tool-use loop (any provider, via LiteLLM) over the same workspace files (`list_files`, `read_file`) | GEPA and CI, where the agent is called dozens of times |
 | `offline` | a deterministic simulator that follows a few instructions in `AGENTS.md` | rehearsals and tests without keys |
 
-OpenClaw needs Node and `npm i -g openclaw`. `make setup` writes the isolated config and validates it. Optional:
+`make setup` at the repo root installs OpenClaw into the venv (`../.venv/bin/openclaw`); set
+`OPENCLAW_BIN` to use another one. Here in `sia/`, `make setup` writes the isolated config and validates it. Optional:
 `python levels/level0_instrument/01_setup.py --mlflow-otel` also streams OpenClaw's internal spans (model and
 tool calls) to MLflow's OTLP endpoint via the `diagnostics-otel` plugin. For MLflow-native OpenClaw traces,
 [`connectors/openclaw-mlflow`](../connectors/openclaw-mlflow/README.md) has the MLflow team's tracing plugin with the

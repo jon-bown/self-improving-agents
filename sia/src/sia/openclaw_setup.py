@@ -47,7 +47,7 @@ def write_config(mlflow_otel: bool = False, experiment_id: str | None = None) ->
 
 def check() -> str:
     if not shutil.which(config.OPENCLAW_BIN):
-        return "openclaw not found on PATH (npm i -g openclaw). You can still use SIA_BACKEND=direct."
+        return f"{config.OPENCLAW_BIN} not found: run `make setup` at the repo root (or set OPENCLAW_BIN). You can still use SIA_BACKEND=direct."
     out = subprocess.run([config.OPENCLAW_BIN, "config", "validate"], env=openclaw_env(),
                          capture_output=True, text=True)
     version = subprocess.run([config.OPENCLAW_BIN, "--version"], capture_output=True, text=True).stdout.strip()

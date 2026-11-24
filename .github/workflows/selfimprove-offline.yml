@@ -3,9 +3,9 @@
 name: selfimprove-offline
 on:
   push:
-    paths: ["harness/**", ".github/workflows/selfimprove-*.yml"]
+    paths: ["harness/**", "uv.lock", "pyproject.toml", ".github/workflows/selfimprove-*.yml"]
   pull_request:
-    paths: ["harness/**", ".github/workflows/selfimprove-*.yml"]
+    paths: ["harness/**", "uv.lock", "pyproject.toml", ".github/workflows/selfimprove-*.yml"]
 jobs:
   loop:
     runs-on: ubuntu-latest
@@ -15,5 +15,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
-      - run: .venv/bin/python -m pytest tests -q
+      - run: uv sync --locked --directory ..   # the repo venv (../.venv) from uv.lock, as `make setup` builds it
+      - run: ../.venv/bin/python -m pytest tests -q

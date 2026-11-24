@@ -39,13 +39,13 @@ notebook.
 
 [RUNBOOK.md](RUNBOOK.md) has every step as a `selfimprove` command. `python -m session.precompute`
 runs all four loops end to end into `store/` (about two hours: each OpenClaw call is about 20 s,
-and the gate runs every dataset row twice). It needs `ANTHROPIC_API_KEY` in `harness/.env`,
-`openclaw` on `PATH`, Node 22+, and the session server.
+and the gate runs every dataset row twice). It needs `make setup` at the repo root (which installs
+OpenClaw and builds the connector), `ANTHROPIC_API_KEY` in `harness/.env`, and the session server.
 
 ```bash
-.venv/bin/python -m session.precompute --fresh    # with the server stopped: empty the store
+../.venv/bin/python -m session.precompute --fresh    # with the server stopped: empty the store
 make session-server                               # in another terminal
-.venv/bin/python -m session.precompute            # or --loops 3 4
+../.venv/bin/python -m session.precompute            # or --loops 3 4
 ```
 
 Models are LLM-driven, so a fresh run won't reproduce the exact numbers, and a gate can fail
@@ -66,7 +66,7 @@ reviewer.py            simulated reviewers (in the room, that's you)
 precompute.py          runs the four loops into store/
 session.env            harness settings: OpenClaw, the connector, the session store
 notebooks/             one notebook per loop, reading store/ (with "Under the hood" MLflow cells)
-build_notebooks.py     writes notebooks/: edit this, then `.venv/bin/python session/build_notebooks.py`
+build_notebooks.py     writes notebooks/: edit this, then `../.venv/bin/python session/build_notebooks.py`
 store/                 the precomputed MLflow store and results/loopN.json
 ```
 

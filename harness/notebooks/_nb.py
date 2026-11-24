@@ -118,8 +118,8 @@ def _check_mlflow() -> None:
     if Version(found) < Version(MIN_MLFLOW):
         raise RuntimeError(
             f"This kernel runs MLflow {found} ({sys.executable}); the notebooks need >= {MIN_MLFLOW}. "
-            f"Switch to the 'selfimprove (.venv)' kernel from `make install`, or upgrade this "
-            f"environment: uv pip install -p {sys.prefix} 'mlflow[genai]>={MIN_MLFLOW}'"
+            f"Switch to the 'Python (self-improving-agents)' kernel: run `make setup` at the repo root, "
+            f"then `make notebooks`, or pick the repo's .venv as the interpreter in your editor."
         )
 
 

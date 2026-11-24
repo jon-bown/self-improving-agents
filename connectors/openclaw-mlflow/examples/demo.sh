@@ -43,13 +43,15 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 DEMO="${DEMO:-$HOME/odsc-5min}"
 PORT="${PORT:-5050}"
-PY="$REPO/harness/.venv/bin/python"
+PY="$REPO/.venv/bin/python"
 AGENTS_MD=("$PY" "$HERE/agents_md.py")
 FEATURES=("$PY" "$HERE/mlflow_features.py")
 
 export MLFLOW_TRACKING_URI="http://127.0.0.1:$PORT"
 export OPENCLAW_STATE_DIR="$DEMO/openclaw" OPENCLAW_CONFIG_PATH="$DEMO/openclaw/openclaw.json"
 export MLFLOW_DISABLE_AGENT_HINT=1
+# `make setup` installs OpenClaw into the repo venv; prefer it over any other on PATH.
+export PATH="$REPO/.venv/bin:$PATH"
 
 die() { echo "demo.sh: $*" >&2; exit 1; }
 ours() {  # $DEMO is this demo's: marked, or holding only what `server` makes (an older server didn't mark it)
@@ -67,18 +69,21 @@ load_key() {  # the Anthropic key from harness/.env, never printed; for OpenClaw
     ANTHROPIC_API_KEY="$(grep '^ANTHROPIC_API_KEY=' "$REPO/harness/.env" | cut -d= -f2- | tr -d '"'"'")"
     export ANTHROPIC_API_KEY
   fi
+  [[ -n "${ANTHROPIC_API_KEY:-}" ]] || die "no ANTHROPIC_API_KEY: add it to $REPO/harness/.env (or export it)"
   unset ANTHROPIC_BASE_URL
 }
 awake() {  # keep a Mac from idle-sleeping mid-turn: a sleeping Mac makes OpenClaw's turn time out
   if command -v caffeinate >/dev/null; then caffeinate -i "$@"; else "$@"; fi
 }
-[[ -x "$PY" ]] || die "the harness venv is missing: run 'make install' in $REPO/harness"
+[[ -x "$PY" ]] || die "the repo's venv is missing: run 'make setup' in $REPO"
+command -v openclaw >/dev/null || [[ "${1:-}" =~ ^(server|reset|help|)$ ]] \
+  || die "openclaw is not installed: run 'make setup' in $REPO"
 
 cmd="${1:-help}"; shift || true
 case "$cmd" in
   server)
     claim
-    exec "$REPO/harness/.venv/bin/mlflow" server --host 127.0.0.1 --port "$PORT" \
+    exec "$REPO/.venv/bin/mlflow" server --host 127.0.0.1 --port "$PORT" \
       --backend-store-uri "sqlite:///$DEMO/mlflow.db" --artifacts-destination "$DEMO/artifacts"
     ;;
 

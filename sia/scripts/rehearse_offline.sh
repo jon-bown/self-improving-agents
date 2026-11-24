@@ -3,7 +3,7 @@
 # Everything goes into a throwaway directory, so it never touches your real MLflow data.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-PY=${PY:-$ROOT/.venv/bin/python}
+PY=${PY:-$ROOT/../.venv/bin/python}   # the repo venv (`make setup` at the root)
 TMP=$(mktemp -d)
 cd "$TMP"   # MLflow writes run artifacts under ./mlruns; keep them out of the repo
 export MLFLOW_TRACKING_URI="sqlite:///$TMP/mlflow.db" SIA_BACKEND=offline SIA_NO_LLM=1 \

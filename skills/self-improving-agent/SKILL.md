@@ -67,10 +67,10 @@ criteria files, traffic, reviewer and runbook for each (`RUNBOOK.md`). Copy its 
 Check for it (`selfimprove doctor`) before writing MLflow code by hand. To set it up:
 
 ```bash
-cd harness && uv venv -p 3.11 .venv && uv pip install -p .venv -e .
-cp .env.example .env      # SI_AGENT + its target, SI_INSTRUCTIONS_FILE, SI_CRITERIA_FILE
-.venv/bin/selfimprove doctor --smoke "a typical request"
-.venv/bin/selfimprove init  # instructions v1 -> production; golden cases -> dataset
+make setup                # at the repo root: .venv, OpenClaw, the connector, harness/.env
+cd harness                # edit .env: SI_AGENT + its target, SI_INSTRUCTIONS_FILE, SI_CRITERIA_FILE
+../.venv/bin/selfimprove doctor --smoke "a typical request"
+../.venv/bin/selfimprove init  # instructions v1 -> production; golden cases -> dataset
 ```
 
 | Step | Command | Writes |

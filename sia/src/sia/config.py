@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from sia import llm
@@ -54,6 +55,8 @@ PROMPT_NAME = os.getenv("SIA_PROMPT_NAME", "acme-support-agents-md")
 DATASET_NAME = os.getenv("SIA_DATASET_NAME", "acme_support_regressions")
 
 # Isolated OpenClaw profile so the demo never touches ~/.openclaw.
-OPENCLAW_BIN = os.getenv("OPENCLAW_BIN", "openclaw")
+# Default: the OpenClaw `make setup` installs into the repo venv (next to this Python), else PATH's.
+_VENV_OPENCLAW = Path(sys.executable).parent / "openclaw"
+OPENCLAW_BIN = os.getenv("OPENCLAW_BIN") or (str(_VENV_OPENCLAW) if _VENV_OPENCLAW.is_file() else "openclaw")
 OPENCLAW_STATE_DIR = Path(os.getenv("SIA_OPENCLAW_STATE_DIR", REPO_ROOT / ".openclaw-state")).resolve()
 WORKSPACES_DIR = Path(os.getenv("SIA_WORKSPACES_DIR", REPO_ROOT / ".workspaces")).resolve()

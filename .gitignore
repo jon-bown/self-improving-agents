@@ -6,3 +6,13 @@ __pycache__/
 .ruff_cache/
 .ipynb_checkpoints/
 .DS_Store
+node_modules/
+
+# MLflow stores created by running code or notebooks from the repo root or blog/
+/mlflow.db
+/mlruns/
+/mlartifacts/
+/.selfimprove/
+blog/**/mlflow.db
+blog/**/mlruns/
+blog/**/mlartifacts/

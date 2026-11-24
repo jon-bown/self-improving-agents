@@ -178,7 +178,7 @@ def openclaw_reply(env: dict, message_file: Path | None = None, message: str | N
 
 def _openclaw_turn(env: dict, message_file: Path | None, message: str | None,
                    session_id: str) -> tuple[str, str, int, bool]:
-    cmd = ["openclaw", "agent", "--local", "--agent", "main", "--session-id", session_id, "--json"]
+    cmd = [os.environ.get("OPENCLAW_BIN", "openclaw"), "agent", "--local", "--agent", "main", "--session-id", session_id, "--json"]
     cmd += ["--message-file", str(message_file)] if message_file else ["-m", message]
     slept = False
     with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:

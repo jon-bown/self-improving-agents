@@ -6,7 +6,8 @@ you or the gate. This page covers your side: deploying it, and the commands it n
 ## Deploy
 
 ```bash
-cd harness && make install            # the harness, once
+make setup && source .venv/bin/activate   # at the repo root: the venv, OpenClaw, the connector
+cd harness
 selfimprove init                      # register AGENTS.md as v1, if you haven't
 selfimprove self setup --workspace ~/acme-live
 source .selfimprove/openclaw-live/env.sh

@@ -115,7 +115,7 @@ def plugin_check(experiment_id: str) -> str:
 def check() -> str:
     binary = config.settings.openclaw_bin
     if not shutil.which(binary):
-        return "openclaw not found on PATH (npm i -g openclaw)"
+        return f"{binary} not found: run `make setup` at the repo root (or set OPENCLAW_BIN)"
     if not (state_dir() / "openclaw.json").is_file():
         write_config()
     out = subprocess.run([binary, "config", "validate"], env=env(), capture_output=True, text=True)

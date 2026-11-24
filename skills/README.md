@@ -91,7 +91,8 @@ commands, and Skill Workshop off). See
 ### Install
 
 ```bash
-cd harness && make install
+make setup && source .venv/bin/activate   # at the repo root, once
+cd harness
 selfimprove self setup --workspace ~/my-agent-live
 ```
 

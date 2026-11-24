@@ -4,7 +4,7 @@
 name: selfimprove-regression
 on:
   pull_request:
-    paths: ["harness/**"]
+    paths: ["harness/**", "uv.lock", "pyproject.toml"]
   workflow_dispatch:
     inputs:
       prompt_ref:
@@ -30,6 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
+      - run: uv sync --locked --directory ..   # the repo venv (../.venv) from uv.lock, as `make setup` builds it
       - run: cp .env.example .env   # your agent settings; override any of them with repository variables
-      - run: .venv/bin/python -m pytest -p mlflow.pytest.plugin tests/regression -n 4 -q
+      - run: ../.venv/bin/python -m pytest -p mlflow.pytest.plugin tests/regression -n 4 -q
