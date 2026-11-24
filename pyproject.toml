@@ -1,0 +1,23 @@
+# One Python environment for the whole repo: the harness, SIA and the blog code share
+# ./.venv, one lockfile (uv.lock) and one Jupyter kernel. Run `make setup`, not uv directly.
+#
+# The components stay independent packages (none imports another); they just install together.
+[project]
+name = "self-improving-agents"
+version = "0.1.0"
+description = "Companion repo for 'Build Your Own Self-Improving Agent with OpenClaw and MLflow'."
+requires-python = ">=3.10"
+dependencies = [
+    "selfimprove[notebooks,dev]",
+    "self-improving-agent[dev]",
+]
+
+[tool.uv]
+package = false   # the root is only the environment, not a package
+
+[tool.uv.sources]
+selfimprove = { workspace = true }
+self-improving-agent = { workspace = true }
+
+[tool.uv.workspace]
+members = ["harness", "sia"]

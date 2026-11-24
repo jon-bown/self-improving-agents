@@ -15,3 +15,6 @@ That workflow sits in `part3/`, not `.github/workflows/`, so it doesn't run in t
 The snippets show the MLflow calls, not a complete agent. Names such as `agent`, `run_agent`
 and the helpers marked *our helper* are yours to supply, and each file's docstring lists the
 ones it expects. For the full loop, runnable end to end, see [`harness/`](../harness/README.md).
+
+To open the notebooks, run `make setup` once at the repo root, then `make notebooks`. They use the
+repo's **Python (self-improving-agents)** kernel, which has MLflow and everything else installed.

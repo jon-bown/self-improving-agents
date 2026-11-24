@@ -3,6 +3,92 @@
 Companion repo for my talk at **ODSC AI West 2026**, *Build Your Own Self-Improving Agent with
 OpenClaw and MLflow*, and for the [*Self-Improvement & MLflow* blog series](#the-blog-series).
 
+## Setup
+
+You need **macOS or Linux** (on Windows, use WSL2), plus three tools. You don't need to install Python,
+OpenClaw or MLflow yourself: `make setup` handles them.
+
+| Tool | Check | Install |
+|---|---|---|
+| [uv](https://docs.astral.sh/uv/) | `uv --version` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` (or `brew install uv`) |
+| Node.js 22+ | `node --version` | `brew install node`, or [nvm](https://github.com/nvm-sh/nvm): `nvm install --lts` |
+| `git`, `make` | `make --version` | preinstalled on Linux; on macOS, `xcode-select --install` |
+
+Then clone the repo and run one command:
+
+```bash
+git clone https://github.com/jon-bown/self-improving-agents.git
+cd self-improving-agents
+make setup
+```
+
+`make setup` takes a couple of minutes the first time. It's safe to re-run, and it skips anything
+already done. Everything it installs stays inside this folder:
+
+| What | Where |
+|---|---|
+| One Python environment for `harness/`, `sia/` and `blog/`, from the lockfile `uv.lock`. uv picks a Python ≥ 3.10 that's native to your machine (arm64 on Apple Silicon) and downloads one if needed. | `.venv/` |
+| A Jupyter kernel, **Python (self-improving-agents)**, which every notebook in the repo uses | `.venv/share/jupyter/` |
+| OpenClaw, installed with npm into the venv: no global install, no `sudo` | `.venv/bin/openclaw` |
+| The OpenClaw → MLflow connector, built and ready to install into an OpenClaw profile | `connectors/openclaw-mlflow/*.tgz` |
+| Config files, created from the examples if missing | `harness/.env`, `sia/.env` |
+
+It finishes by checking the result. Run `make check` at any time to repeat the check.
+
+**Add an API key** for live runs: set `ANTHROPIC_API_KEY=` in `harness/.env` (the demo and the harness
+read it there) and in `sia/.env`. To use another provider, see the comments in those files. Without a
+key, the tests, the offline modes and most notebooks still run.
+
+### After setup
+
+**See OpenClaw traced in MLflow.** Use two terminals in the repo root:
+
+```bash
+make demo-server     # terminal 1: a separate MLflow server for the demo on http://127.0.0.1:5050; leave it running
+make demo            # terminal 2: set up OpenClaw, install the connector, ask one question, list its trace
+```
+
+The first `make demo` creates an isolated OpenClaw profile in `~/odsc-5min`, installs the connector
+into it, and points the connector at the demo server. It also registers the agent's `AGENTS.md` as a
+prompt in MLflow, then asks *"Do you have an uptime SLA?"*. Open http://127.0.0.1:5050, go to experiment
+**openclaw-demo** and then **Traces**, and you'll see the run: the agent span, its LLM and tool calls,
+and the policy files it read. Ask more questions with `make demo-ask Q="How do I reset my password?"`.
+The full five-minute talk demo, in which the agent fixes itself, is in
+[`live-demo.md`](connectors/openclaw-mlflow/examples/live-demo.md). `make demo-reset` starts over
+(stop the server first).
+
+**Open the notebooks.** `make notebooks` starts JupyterLab on the whole repo. The notebooks pick the
+**Python (self-improving-agents)** kernel automatically. In VS Code or Cursor, choose `.venv/bin/python`
+as the interpreter or kernel instead; `.vscode/settings.json` already points there.
+
+**Use the command line.** Run `source .venv/bin/activate` to put `selfimprove`, `mlflow` and `openclaw`
+on your `PATH`. The Makefiles inside `harness/` and `sia/` find the venv without activating it:
+
+```bash
+cd harness && make doctor               # the harness: check your agent, then see harness/README.md
+cd sia && make server                   # SIA: its MLflow server; then, in another terminal, make level0 level1 level2
+make test                               # every offline test suite (harness, SIA, connector), at the root
+```
+
+### Options, updates and starting over
+
+```bash
+UV_PYTHON=3.12 make setup               # a specific Python version (any >= 3.10)
+OPENCLAW_VERSION=2026.10.5 make setup   # a specific OpenClaw, instead of the latest
+SKIP_OPENCLAW=1 make setup              # Python and notebooks only, no Node needed
+git pull && make setup                  # update: re-syncs the venv to the new lockfile
+make clean setup                        # start over: rebuilds .venv, OpenClaw and the connector
+```
+
+| Problem | Fix |
+|---|---|
+| `make check` reports an Intel Python on Apple Silicon, or `cryptography` fails with `symbol not found in flat namespace` | `make clean setup`. Setup asks uv for a native arm64 Python, but a venv built by an older version of this repo may be Intel. |
+| `openclaw: command not found` outside `make` | `source .venv/bin/activate`, or use `.venv/bin/openclaw`. To use another OpenClaw, set `OPENCLAW_BIN=/path/to/openclaw`. |
+| A notebook says its kernel runs the wrong MLflow | Switch to the **Python (self-improving-agents)** kernel (or `.venv/bin/python` in an editor). |
+| `make demo-server` says the port is in use | `make demo-server DEMO_PORT=5051`, then `make demo DEMO_PORT=5051`. On a Mac, port 5000 is AirPlay Receiver, so the repo avoids it for the demo. |
+
+## The loop
+
 Every part of this repo runs the same loop, with MLflow providing the traces, the signal, the
 store, and the gate:
 
@@ -24,14 +110,14 @@ The harness follows these posts on ODSC's blog:
 
 ## Four components
 
-The repo holds four independent components. Each folder has its own README, install step and
-tests, and none imports another.
+The repo holds four independent components. Each folder has its own README and tests, and none
+imports another. They share one environment, which `make setup` builds.
 
 | | what it is | start here |
 |---|---|---|
-| **[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md)** | The OpenClaw → MLflow connector: MLflow's `@mlflow/mlflow-openclaw` tracing plugin, with the fixes it needs on OpenClaw 2026.10. Every OpenClaw run becomes an MLflow trace (`AGENT` → `LLM` / `TOOL` spans, tokens, session). Works with any OpenClaw profile. | `./install.sh --tracking-uri http://localhost:5000 --experiment openclaw` |
-| **[`harness/`](harness/README.md)** | The MLflow self-improving harness, `selfimprove`: the blog series' framework (signal → store → update, with triage, approval and a gate) for an agent you bring (a Python function, an HTTP service, a CLI, OpenClaw or Hermes), configured from `.env`. Ships workflows, walkthrough notebooks, and the talk's four-loop demo in [`harness/session`](harness/session/README.md). | `make install doctor` |
-| **[`sia/`](sia/README.md)** | The level-based self-improving agent (SIA): the tutorial's Acme Cloud support agent on OpenClaw, built up over six levels from tracing to an unattended loop. Set your provider and API key in `.env`, and every level runs with `make`. | `make install server`, then `make level0 level1 level2` |
+| **[`connectors/openclaw-mlflow`](connectors/openclaw-mlflow/README.md)** | The OpenClaw → MLflow connector: MLflow's `@mlflow/mlflow-openclaw` tracing plugin, with the fixes it needs on OpenClaw 2026.10. Every OpenClaw run becomes an MLflow trace (`AGENT` → `LLM` / `TOOL` spans, tokens, session). Works with any OpenClaw profile. | `make demo` (built by `make setup`); for your own profile, `./install.sh --tracking-uri http://127.0.0.1:5070 --experiment openclaw` |
+| **[`harness/`](harness/README.md)** | The MLflow self-improving harness, `selfimprove`: the blog series' framework (signal → store → update, with triage, approval and a gate) for an agent you bring (a Python function, an HTTP service, a CLI, OpenClaw or Hermes), configured from `.env`. Ships workflows, walkthrough notebooks, and the talk's four-loop demo in [`harness/session`](harness/session/README.md). | `cd harness && make doctor` |
+| **[`sia/`](sia/README.md)** | The level-based self-improving agent (SIA): the tutorial's Acme Cloud support agent on OpenClaw, built up over six levels from tracing to an unattended loop. Set your provider and API key in `.env`, and every level runs with `make`. | `cd sia && make server`, then `make level0 level1 level2` |
 | **[`skills/`](skills/README.md)** | Two agent skills. `self-improving-agent`: everything above, packaged for a coding agent. It applies the framework with the harness, its workflows and the connector, writes verifiers, handles gate rejections, and keeps to the rules (the proposer never approves, the holdout stays hidden). `self-improving-with-mlflow`: loaded by OpenClaw itself, so the agent can check its standing, pass on corrections, recall confirmed lessons and propose changes to itself, all through the harness's gate. | `cp -r skills/self-improving-agent ~/.claude/skills/`; `selfimprove self setup --workspace <dir>` |
 
 How they fit together:
@@ -66,6 +152,9 @@ How they fit together:
 
 ```
 README.md            this map
+Makefile             setup, check, notebooks, test, and the connector demo (make help)
+pyproject.toml       the uv workspace: one .venv for harness/ and sia/; uv.lock pins it
+scripts/setup.sh     what make setup and make check run
 docs/                architecture.md: MLflow, the server, OpenClaw and Hermes
 .agents/skills/      MLflow's agent skills for coding agents (trace analysis, evaluation, scorers);
                      skills-lock.json pins them
@@ -82,100 +171,19 @@ Personal agents are someone's real setup, so every component keeps its OpenClaw 
 state inside its own folder. None of them touches `~/.openclaw`, `~/.hermes`, or a gateway
 you already run.
 
-## Requirements
-
-| Tool | Version | Needed for | Install |
-|---|---|---|---|
-| Python | 3.11 | harness, SIA, blog code | `uv python install 3.11` |
-| [uv](https://docs.astral.sh/uv/) | latest | every Python venv (`make install`) | `brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| `make`, `git` | any | running the levels and workflows | preinstalled on macOS (`xcode-select --install`) and most Linux |
-| Node.js + npm | 22+ | OpenClaw and the connector | `brew install node@22`, or [nvm](https://github.com/nvm-sh/nvm): `nvm install 22` |
-| OpenClaw | 2026.10+ | the OpenClaw runtime, the connector, the talk demo | see [Installing OpenClaw](#installing-openclaw) |
-| MLflow | 3.17.2+ | everything | installed for you by `make install` (`mlflow[genai]`) |
-| A model provider key | | live runs (not the offline modes or tests) | `ANTHROPIC_API_KEY`, or another provider, in each component's `.env` |
-
-The offline backends (`SIA_BACKEND=offline`, the harness's offline workflow) and the unit tests run
-without OpenClaw or an API key.
-
-### Installing OpenClaw
-
-OpenClaw ships as an npm package. With Node 22+ on your `PATH`:
-
-```bash
-node --version             # v22.x or later
-npm install -g openclaw
-openclaw --version         # 2026.10 or later
-```
-
-If `npm install -g` fails with a permissions error, use a Node from Homebrew or nvm rather than
-`sudo`. To upgrade an older OpenClaw, run `npm install -g openclaw@latest`.
-
-You don't need to run `openclaw onboard` or start a gateway. Each component creates its own
-isolated OpenClaw profile (`.selfimprove/openclaw/` in the harness, `.openclaw-state/` in SIA) and
-leaves `~/.openclaw` alone. If `openclaw` isn't on your `PATH`, point the connector at it with
-`OPENCLAW_BIN=/path/to/openclaw`.
-
-The connector and the live demo also need an MLflow **server**, because traces are exported over
-HTTP. Leave one running in its own terminal (on a Mac, port 5000 is usually taken by AirPlay):
-
-```bash
-mlflow server --port 5070
-```
-
 ## Platform support
 
 | Platform | Status |
 |---|---|
-| macOS, Apple Silicon (arm64) | supported and recommended: the harness and SIA test suites pass |
-| macOS, Intel (x86_64), or an Intel Python under Rosetta on Apple Silicon | supported: the harness and SIA install a compatible `cryptography` automatically, and their tests pass |
+| macOS, Apple Silicon (arm64) | supported and recommended: `make setup` builds a native arm64 venv |
+| macOS, Intel (x86_64) | supported: the harness and SIA pin a `cryptography` that loads there (`cryptography<49`, Intel macOS only) |
 | Linux, x86_64 | supported: CI runs on `ubuntu-latest` |
 | Linux, arm64 | not tested |
 | Windows | not tested; use WSL2 |
 
-Everything needs Python 3.11 through [uv](https://docs.astral.sh/uv/). The connector needs Node 22+;
-it builds to a single JavaScript file, so it runs the same on either architecture.
+Any Python from 3.10 up works; uv picks one and `uv.lock` pins the packages, so every machine gets the
+same environment. The connector builds to a single JavaScript file, so it runs the same on any
+architecture with Node 22+.
 
-### Intel (x86_64) Macs, and Intel Pythons on Apple Silicon
-
-`cryptography` 49 and 50 publish an Intel macOS wheel that fails to load, with
-`symbol not found in flat namespace` (`_OSSL_get_max_threads`, `_BIO_ADDR_free`). MLflow imports it as
-soon as it opens a tracking store, so every command fails. Both `harness/pyproject.toml` and
-`sia/pyproject.toml` therefore pin `cryptography<49` on Intel macOS only (48.0.1 works). Apple Silicon
-and Linux are unaffected and get the latest.
-
-**Check what you're running:**
-
-```bash
-uname -m                                                    # the machine: arm64 or x86_64
-file "$(command -v uv)"                                     # the uv build: arm64 or x86_64
-.venv/bin/python -c "import platform; print(platform.machine())"   # the venv's Python
-```
-
-A venv's Python follows the `uv` build, not the machine. An Intel `uv` on Apple Silicon creates Intel
-venvs that run under Rosetta: they work, but more slowly.
-
-**On an Intel Mac:** nothing extra. `make install` (or the quickstart's `uv venv` + `uv pip install`)
-picks `cryptography` 48.0.1 for you.
-
-**On Apple Silicon:** use a native `uv`, so your venvs are arm64:
-
-```bash
-brew install uv          # with arm64 Homebrew in /opt/homebrew
-# or: curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Then delete any existing `.venv` and run `make install` again in `harness/` and `sia/`.
-
-**To build an Intel venv on purpose** (for example, to test Intel support from an Apple Silicon Mac),
-ask uv for an x86_64 Python:
-
-```bash
-uv venv -p cpython-3.11-macos-x86_64-none .venv && uv pip install -p .venv -e ".[dev]"
-```
-
-**A venv made before the pin**, or one where another package forces a newer `cryptography`, still
-fails. Fix it in place:
-
-```bash
-uv pip install -p .venv "cryptography<49"
-```
+To build an Intel venv on purpose on Apple Silicon (for example, to test Intel support), run
+`make clean && UV_PYTHON=cpython-macos-x86_64 make setup`.

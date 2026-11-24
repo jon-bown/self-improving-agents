@@ -16,9 +16,9 @@ commands). Results go to MLflow (traces, assessments, the dataset, prompt versio
 job) and a summary per loop to store/results/loopN.json, which the notebooks read.
 
     make session-server                        # the store's MLflow server, in another terminal
-    .venv/bin/python -m session.precompute     # all four loops (about two hours)
-    .venv/bin/python -m session.precompute --loops 3 4
-    .venv/bin/python -m session.precompute --fresh   # wipe the store first (stop the server)
+    ../.venv/bin/python -m session.precompute     # all four loops (about two hours)
+    ../.venv/bin/python -m session.precompute --loops 3 4
+    ../.venv/bin/python -m session.precompute --fresh   # wipe the store first (stop the server)
 """
 
 from __future__ import annotations

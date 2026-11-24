@@ -3,9 +3,9 @@
 name: sia-offline-smoke
 on:
   push:
-    paths: ["sia/**", ".github/workflows/sia-*.yml"]
+    paths: ["sia/**", "uv.lock", "pyproject.toml", ".github/workflows/sia-*.yml"]
   pull_request:
-    paths: ["sia/**", ".github/workflows/sia-*.yml"]
+    paths: ["sia/**", "uv.lock", "pyproject.toml", ".github/workflows/sia-*.yml"]
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -15,5 +15,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev]"
-      - run: .venv/bin/python -m pytest -q
+      - run: uv sync --locked --directory ..   # the repo venv (../.venv) from uv.lock, as `make setup` builds it
+      - run: ../.venv/bin/python -m pytest -q

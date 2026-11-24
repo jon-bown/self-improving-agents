@@ -26,7 +26,9 @@ the fixes.
 
 ## Requirements
 
-* Node 22+ and `openclaw` on your `PATH` (`npm i -g openclaw`, 2026.10 or later).
+* Node 22+ and OpenClaw 2026.10 or later. `make setup` at the repo root installs OpenClaw into the
+  repo venv (`.venv/bin/openclaw`) and builds this plugin; `install.sh` uses that OpenClaw unless
+  `OPENCLAW_BIN` names another, or there's none and `openclaw` is on your `PATH`.
 * An MLflow **server**. The plugin exports traces over HTTP, so a `sqlite:///` store won't
   work. Start one and leave it running. The examples here use port 5070, because on a Mac
   MLflow's usual port 5000 is normally taken by the AirPlay Receiver:

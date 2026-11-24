@@ -1,6 +1,6 @@
 """Write session/notebooks/0N_*.ipynb from this file; edit here, not in the notebooks.
 
-    cd harness && .venv/bin/python session/build_notebooks.py [output folder]
+    cd harness && ../.venv/bin/python session/build_notebooks.py [output folder]
 
 Cells marked "Under the hood" say which MLflow calls produced each step's evidence, and read it
 back with the raw MLflow API. They only read from the store, like every other cell.
@@ -27,7 +27,8 @@ def under(s):
 
 def notebook(name, cells):
     nb = nbf.v4.new_notebook()
-    nb.metadata["kernelspec"] = {"display_name": "selfimprove (.venv)", "language": "python", "name": "selfimprove"}
+    nb.metadata["kernelspec"] = {"display_name": "Python (self-improving-agents)", "language": "python",
+                                 "name": "self-improving-agents"}
     nb.metadata["language_info"] = {"name": "python"}
     for i, cell in enumerate(cells):
         cell.id = f"{name[:2]}-{i:02d}"  # stable ids, so a rebuild only diffs what changed

@@ -18,20 +18,20 @@ the server and open the notebooks, or the MLflow UI at http://127.0.0.1:19560.
 
 ## Setup
 
-From `harness/`, with `ANTHROPIC_API_KEY` in `harness/.env` and OpenClaw installed
-(`npm i -g openclaw`):
+From `harness/`, after `make setup` at the repo root (it installs OpenClaw and builds the
+connector), with `ANTHROPIC_API_KEY` in `harness/.env`:
 
 ```bash
 make session-server
 ```
 
 Leave it running and use a second terminal for the rest. To start from an empty store instead of
-the precomputed one, stop the server, run `.venv/bin/python -m session.precompute --fresh`, and
+the precomputed one, stop the server, run `../.venv/bin/python -m session.precompute --fresh`, and
 start it again.
 
 ```bash
 export SI_ENV_FILE=session/session.env
-export SI=.venv/bin/selfimprove
+export SI=../.venv/bin/selfimprove
 ```
 
 `doctor` writes the isolated OpenClaw profile in `session/.state/openclaw/` (never `~/.openclaw`)
@@ -67,7 +67,7 @@ $SI label
 ```
 
 ```bash
-.venv/bin/python -m session.reviewer
+../.venv/bin/python -m session.reviewer
 ```
 
 In the UI, open a failing trace's **linked OpenClaw trace** (search
@@ -77,7 +77,7 @@ In the UI, open a failing trace's **linked OpenClaw trace** (search
 **Store.** You add the labeled failures as tests (`store.record_from_trace`, as in notebook 01):
 
 ```bash
-.venv/bin/python -c "
+../.venv/bin/python -c "
 from session.precompute import configure; configure(1)
 from selfimprove import store, traces
 fails = [t for t in traces.production(traces.FAILED + ' AND ' + traces.HAS_EXPECTATION)]
@@ -103,7 +103,7 @@ If it passes, you promote it. Then send the same traffic again and compare:
 ```bash
 $SI promote 2 --reason "loop 1: gate passed"
 $SI replay session/traffic/loop1.txt
-.venv/bin/python -m session.reviewer
+../.venv/bin/python -m session.reviewer
 $SI report
 ```
 
@@ -117,7 +117,7 @@ actually read, taken from the connector's `read` spans.
 export SI_CRITERIA_FILE=criteria/loop2.yaml
 $SI replay session/traffic/loop2.txt
 $SI score
-.venv/bin/python -m session.reviewer
+../.venv/bin/python -m session.reviewer
 ```
 
 **Store, by the harness.** Triage reads the new failures, groups them into themes with an analyst,
@@ -156,7 +156,7 @@ First, the support team adds "faster account recovery" to AGENTS.md and ships it
 gate (`changes/support_team_fast_recovery.md`, appended to production and promoted):
 
 ```bash
-.venv/bin/python -c "from session.precompute import configure, outside_change; configure(3); outside_change('changes/support_team_fast_recovery.md', 'support-team', 'Faster account recovery: verify customers in chat')"
+../.venv/bin/python -c "from session.precompute import configure, outside_change; configure(3); outside_change('changes/support_team_fast_recovery.md', 'support-team', 'Faster account recovery: verify customers in chat')"
 ```
 
 Now the agent asks for passwords and says it has reset 2FA. `no_credential_requests` is
@@ -168,7 +168,7 @@ and align it to them:
 export SI_CRITERIA_FILE=criteria/loop3.yaml
 $SI replay session/traffic/loop3.txt
 $SI score
-.venv/bin/python -m session.reviewer
+../.venv/bin/python -m session.reviewer
 $SI align --force
 ```
 
@@ -199,7 +199,7 @@ The growth team adds a retention playbook (discounts, roadmap dates) and ships i
 gate:
 
 ```bash
-.venv/bin/python -c "from session.precompute import configure, outside_change; configure(4); outside_change('changes/growth_team_retention.md', 'growth-team', 'Retention playbook: discounts and roadmap dates')"
+../.venv/bin/python -c "from session.precompute import configure, outside_change; configure(4); outside_change('changes/growth_team_retention.md', 'growth-team', 'Retention playbook: discounts and roadmap dates')"
 ```
 
 Then new kinds of questions arrive: discounts, roadmap dates, contracts. Reviewers label only half of
@@ -209,7 +209,7 @@ with `SI_AUTO_PROMOTE=true` the gate promotes:
 ```bash
 export SI_CRITERIA_FILE=criteria/loop4.yaml SI_AUTO_PROMOTE=true
 $SI replay session/traffic/loop4.txt
-.venv/bin/python -m session.reviewer --sample 0.5
+../.venv/bin/python -m session.reviewer --sample 0.5
 $SI cycle
 ```
 

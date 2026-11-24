@@ -25,8 +25,7 @@ gateway you run, or any other MLflow server.
 
 ## You need
 
-* `openclaw` on your `PATH` (2026.10 or later) and Node 22+
-* the harness venv: `cd harness && make install`, from the repo root
+* `make setup` at the repo root: the venv, OpenClaw (`.venv/bin/openclaw`) and the connector build
 * `ANTHROPIC_API_KEY` in `harness/.env`; `demo.sh` reads it from there and never prints it
 * port 5050 free (port 5000 on a Mac is the AirPlay Receiver, not MLflow)
 

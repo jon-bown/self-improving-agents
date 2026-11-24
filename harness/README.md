@@ -98,17 +98,15 @@ flowchart LR
 
 ## Quickstart
 
-```bash
-cd harness
-uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[notebooks]"
-cp .env.example .env            # add ANTHROPIC_API_KEY (or another provider), or leave it empty
-.venv/bin/selfimprove doctor    # shows the config; checks that your agent loads
-.venv/bin/selfimprove init      # instructions v1 -> production; golden cases -> dataset
-```
+First run `make setup` at the repo root ([Setup](../README.md#setup)). It builds the repo's one
+venv (`../.venv`), with the harness installed, and creates `harness/.env` from `.env.example`.
 
-On an Intel (x86_64) Mac, or with an Intel Python on Apple Silicon, see
-[Platform support](../README.md#platform-support): it works, and the root README says how to check
-which one you have.
+```bash
+source .venv/bin/activate       # from the repo root: puts selfimprove, mlflow and openclaw on PATH
+cd harness                      # add ANTHROPIC_API_KEY (or another provider) to .env, or leave it empty
+selfimprove doctor              # shows the config; checks that your agent loads (or: make doctor)
+selfimprove init                # instructions v1 -> production; golden cases -> dataset
+```
 
 The defaults run the example agent (`examples/support_agent.py`, a support agent for a fictional
 product with three seeded flaws). With no API key it falls back to a rule-based stand-in and code
@@ -258,7 +256,7 @@ key. Promotion stays with a person unless `SI_AUTO_PROMOTE=true`.
 | [06 · The loop runs itself](notebooks/06_automate.ipynb) | Pt 3 | `cycle()`, auto-promotion, rollback, scheduling, what stays with a person |
 
 ```bash
-make notebooks        # JupyterLab on notebooks/ with the "selfimprove (.venv)" kernel
+make notebooks        # JupyterLab on notebooks/ with the "Python (self-improving-agents)" kernel
 ```
 
 They share one store in `.selfimprove/notebooks/` (notebook 00 starts it fresh), separate from the

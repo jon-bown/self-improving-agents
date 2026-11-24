@@ -8,6 +8,7 @@ the .env file, so the harness behaves the same from a notebook, the CLI, or CI.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,6 +34,12 @@ if ENV_FILE:
     from dotenv import load_dotenv
 
     load_dotenv(ENV_FILE, override=False)
+
+
+def _default_openclaw() -> str:
+    """The OpenClaw `make setup` installs next to this Python (in the repo venv), else PATH's."""
+    venv_bin = Path(sys.executable).parent / "openclaw"
+    return str(venv_bin) if venv_bin.is_file() else "openclaw"
 
 
 def _get(name: str, default: str = "") -> str:
@@ -80,7 +87,7 @@ class Settings:
     agent_timeout: float = field(default_factory=lambda: _float("SI_AGENT_TIMEOUT", 600))
     agent_name: str = field(default_factory=lambda: _get("SI_AGENT_NAME", "my_agent"))
     input_key: str = field(default_factory=lambda: _get("SI_INPUT_KEY", "question"))
-    openclaw_bin: str = field(default_factory=lambda: _get("OPENCLAW_BIN", "openclaw"))
+    openclaw_bin: str = field(default_factory=lambda: _get("OPENCLAW_BIN") or _default_openclaw())
     openclaw_mlflow: bool = field(default_factory=lambda: _get("SI_OPENCLAW_MLFLOW") == "1")
 
     # What improves

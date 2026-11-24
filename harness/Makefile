@@ -1,16 +1,16 @@
 # selfimprove harness.  `make help` lists targets.
-PY  ?= .venv/bin/python
-SI  ?= .venv/bin/selfimprove
+# One venv for the whole repo, at the root: `make install` here runs the root's `make setup`.
+VENV ?= ../.venv
+PY   ?= $(VENV)/bin/python
+SI   ?= $(VENV)/bin/selfimprove
 
 .PHONY: help install doctor init traffic review loop cycle report test regression notebooks ui reset session-server session-notebooks session-precompute
 
 help:           ## list targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/\t/'
 
-install:        ## create .venv, install the harness and the notebook kernel
-	uv venv -p 3.11 .venv && uv pip install -p .venv -e ".[dev,notebooks]"
-	$(PY) -m ipykernel install --prefix .venv --name selfimprove --display-name "selfimprove (.venv)"
-	@test -f .env || cp .env.example .env
+install:        ## set up the repo (root `make setup`): venv, kernel, OpenClaw, connector, .env
+	$(MAKE) -C .. setup
 
 doctor:         ## show the configuration; check that your agent loads and answers
 	$(SI) doctor --smoke "How long can I wait to request a refund?"
@@ -40,7 +40,7 @@ regression:     ## every dataset row as an @mlflow.test case (calls your agent a
 	SI_REGRESSION=1 $(PY) -m pytest -p mlflow.pytest.plugin tests/regression -n 4 -q
 
 notebooks:      ## JupyterLab on the walkthrough notebooks
-	.venv/bin/jupyter lab notebooks
+	$(VENV)/bin/jupyter lab notebooks
 
 ui:             ## MLflow UI on the harness store (port 5003; the notebooks: STORE=.selfimprove/notebooks)
 	$(PY) -m mlflow ui --backend-store-uri sqlite:///$(or $(STORE),.selfimprove)/mlflow.db --port 5003
@@ -50,11 +50,11 @@ reset:          ## delete the harness's local store, workspaces and queue
 
 session-server: ## the ODSC session's precomputed store on http://127.0.0.1:19560 (leave running)
 	mkdir -p session/store
-	.venv/bin/mlflow server --host 127.0.0.1 --port 19560 \
+	$(VENV)/bin/mlflow server --host 127.0.0.1 --port 19560 \
 	  --backend-store-uri sqlite:///session/store/mlflow.db --artifacts-destination session/store/artifacts
 
 session-notebooks: ## JupyterLab on the session notebooks (needs session-server)
-	.venv/bin/jupyter lab session/notebooks
+	$(VENV)/bin/jupyter lab session/notebooks
 
 session-precompute: ## re-run the session's four loops into session/store (needs session-server; ~2 h)
-	.venv/bin/python -m session.precompute
+	$(PY) -m session.precompute

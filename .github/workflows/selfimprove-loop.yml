@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv -p 3.11 .venv && uv pip install -p .venv -e .
+      - run: uv sync --locked --directory ..   # the repo venv (../.venv) from uv.lock, as `make setup` builds it
       - run: cp .env.example .env
       # The human queue is a file; keep it between runs. (Point SI_STATE_DIR at shared storage
       # if several people work the queue.)
@@ -49,20 +49,20 @@ jobs:
       - name: nightly
         if: ${{ github.event.schedule == '17 6 * * *' }}
         run: |
-          .venv/bin/selfimprove score
-          .venv/bin/selfimprove monitor
-          .venv/bin/selfimprove align
-          .venv/bin/selfimprove triage
-          .venv/bin/selfimprove approve
+          ../.venv/bin/selfimprove score
+          ../.venv/bin/selfimprove monitor
+          ../.venv/bin/selfimprove align
+          ../.venv/bin/selfimprove triage
+          ../.venv/bin/selfimprove approve
       - name: weekly cycle
         if: ${{ github.event.schedule == '43 7 * * 1' }}
-        run: .venv/bin/selfimprove cycle
+        run: ../.venv/bin/selfimprove cycle
       - name: one job
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: .venv/bin/selfimprove ${{ inputs.job }}
+        run: ../.venv/bin/selfimprove ${{ inputs.job }}
       - name: report
         if: always()
-        run: .venv/bin/selfimprove report | tee -a "$GITHUB_STEP_SUMMARY"
+        run: ../.venv/bin/selfimprove report | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

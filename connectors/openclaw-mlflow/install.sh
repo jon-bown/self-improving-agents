@@ -13,7 +13,11 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ID="mlflow-openclaw"
-OPENCLAW_BIN="${OPENCLAW_BIN:-openclaw}"
+# OpenClaw: $OPENCLAW_BIN, else the one `make setup` installs into the repo venv, else PATH.
+REPO_OPENCLAW="$HERE/../../.venv/bin/openclaw"
+if [[ -z "${OPENCLAW_BIN:-}" ]]; then
+  if [[ -x "$REPO_OPENCLAW" ]]; then OPENCLAW_BIN="$REPO_OPENCLAW"; else OPENCLAW_BIN=openclaw; fi
+fi
 
 tracking_uri="${MLFLOW_TRACKING_URI:-}"
 experiment_id="${MLFLOW_EXPERIMENT_ID:-}"
@@ -53,7 +57,7 @@ echo "    $tgz"
 [[ $build_only == 1 ]] && exit 0
 
 # --- configure -------------------------------------------------------------------------------
-command -v "$OPENCLAW_BIN" >/dev/null || die "$OPENCLAW_BIN is not on PATH (npm i -g openclaw)"
+command -v "$OPENCLAW_BIN" >/dev/null || die "$OPENCLAW_BIN not found: run 'make setup' at the repo root (or set OPENCLAW_BIN)"
 [[ -n "$tracking_uri" ]] || die "--tracking-uri is required (or set MLFLOW_TRACKING_URI)"
 case "$tracking_uri" in
   http://*|https://*|databricks*) ;;
